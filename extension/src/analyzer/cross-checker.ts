@@ -97,7 +97,7 @@ export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): Analysis
   const flaggedSkills = new Set(flags.map(f => f.skill));
   for (const skill of langSkills) {
     if (!flaggedSkills.has(skill)) {
-      flags.push(ruleVerified(skill));
+      flags.push(ruleVerified(skill, profile));
     }
   }
 
