@@ -2,6 +2,15 @@
 
 Each rule is a pure function that returns either a `Flag` or `null`.
 
+## Flag labels
+
+| Type | Label | Meaning |
+|------|-------|---------|
+| `RED` | 🔴 Discrepancy | Claim vs evidence mismatch found |
+| `YELLOW` | 🟡 Observation | Notable pattern detected |
+| `GREEN` | 🟢 Verified | Evidence confirms the claim |
+| `GRAY` | ⚪ Not observed | No evidence found (neutral) |
+
 ## Principles
 
 1. **Evidence-based language** — flags report what was *observed*, not what was *concluded*
@@ -32,14 +41,15 @@ Each rule is a pure function that returns either a `Flag` or `null`.
 | **Message** | *"Claimed {N}y of {skill} but public GitHub activity shows ~{N}y"* |
 | **Caveat** | Public GitHub history may not reflect private/professional experience |
 
-### RECENT_ONLY — Public skill activity is recent
+### RECENT_ONLY — Public skill evidence is recent
 
 | Field | Value |
 |-------|-------|
-| **Severity** | 🟡 Medium |
-| **Type** | `YELLOW` |
+| **Severity** | ⚪ Info |
+| **Type** | `GRAY` |
 | **Trigger** | All public repos using skill X are less than 12 months old |
-| **Message** | *"Public {skill} activity is recent (< 1 year)"* |
+| **Message** | *"Public {skill} evidence detected only in the last 12 months"* |
+| **Note** | Indicates recency, not evidence volume — many repos can trigger this |
 
 ### INACTIVE — No recent public activity
 

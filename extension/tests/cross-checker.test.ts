@@ -104,7 +104,7 @@ describe('Rule: RECENT_ONLY', () => {
     const profile = makeProfile({ repos: [recentRepo], languageStats: { JavaScript: 20000 } });
     const result = runCrossCheck(cv, profile);
     const flag = result.flags.find(f => f.ruleId === 'RECENT_ONLY');
-    expect(flag?.type).toBe('YELLOW');
+    expect(flag?.type).toBe('GRAY');
   });
 });
 

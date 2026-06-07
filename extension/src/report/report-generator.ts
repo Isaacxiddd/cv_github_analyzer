@@ -1,10 +1,10 @@
 import type { AnalysisResult, Flag, FlagType } from '../types/index.js';
 
 const FLAG_COLORS: Record<FlagType, { bg: string; text: string; label: string }> = {
-  RED:    { bg: '#fee2e2', text: '#991b1b', label: '🔴 High inconsistency' },
-  YELLOW: { bg: '#fef9c3', text: '#854d0e', label: '🟡 Low evidence' },
-  GREEN:  { bg: '#dcfce7', text: '#166534', label: '🟢 Consistent' },
-  GRAY:   { bg: '#f1f5f9', text: '#475569', label: '⚪ No data' },
+  RED:    { bg: '#fee2e2', text: '#991b1b', label: '🔴 Discrepancy' },
+  YELLOW: { bg: '#fef9c3', text: '#854d0e', label: '🟡 Observation' },
+  GREEN:  { bg: '#dcfce7', text: '#166534', label: '🟢 Verified' },
+  GRAY:   { bg: '#f1f5f9', text: '#475569', label: '⚪ Not observed' },
 };
 
 function scoreColor(score: number): string {

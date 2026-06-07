@@ -50,7 +50,7 @@ describe('generateReport', () => {
         evidence: '0 repos with Rust',
       }],
     }));
-    expect(html).toContain('High inconsistency');
+    expect(html).toContain('Discrepancy');
     expect(html).toContain('Rust');
   });
 
@@ -58,7 +58,7 @@ describe('generateReport', () => {
     const html = generateReport(makeResult({
       flags: [{ type: 'YELLOW', skill: 'Testing', ruleId: 'NO_TESTS', message: 'No tests', evidence: 'x repos' }],
     }));
-    expect(html).toContain('Low evidence');
+    expect(html).toContain('Observation');
   });
 
   it('sorts RED flags before YELLOW', () => {
@@ -68,7 +68,7 @@ describe('generateReport', () => {
         { type: 'RED', skill: 'R', ruleId: 'NO_REPOS', message: 'r', evidence: 'e' },
       ],
     }));
-    expect(html.indexOf('High inconsistency')).toBeLessThan(html.indexOf('Low evidence'));
+    expect(html.indexOf('Discrepancy')).toBeLessThan(html.indexOf('Observation'));
   });
 
   it('includes metadata counts', () => {
