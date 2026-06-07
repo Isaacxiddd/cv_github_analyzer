@@ -17,10 +17,12 @@ const buildOptions: esbuild.BuildOptions = {
   sourcemap: watch ? 'inline' : false,
   minify: !watch,
   outdir: '.',
+  define: {},
 };
 
 copyFileSync('public/manifest.json', 'dist/manifest.json');
 copyFileSync('src/popup/popup.html',  'dist/popup.html');
+copyFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'dist/pdf.worker.min.js');
 
 if (watch) {
   const ctx = await esbuild.context(buildOptions);

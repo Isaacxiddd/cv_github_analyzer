@@ -3,16 +3,18 @@
   "name": "CV ↔ GitHub Analyzer",
   "version": "0.1.0",
   "description": "Cross-check your CV skills against your GitHub profile to detect inconsistencies.",
-  "permissions": ["storage", "activeTab", "identity"],
-  "host_permissions": ["https://api.github.com/*"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://api.github.com/*",
+    "https://github.com/*"
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "CV GitHub Analyzer",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
+    "default_title": "CV GitHub Analyzer"
   },
   "background": {
     "service_worker": "background.js",

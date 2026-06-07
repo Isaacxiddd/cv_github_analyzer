@@ -83,3 +83,49 @@ ANTHROPIC_API_KEY=...
 STRIPE_SECRET_KEY=...
 JWT_SECRET=...
 ```
+
+## Planned: Firebase Auth (v0.2)
+
+When user identity is needed (e.g. saving reports, limiting free tier), add Firebase Authentication with Google sign-in.
+
+### Approach
+
+Use `chrome.identity.getAuthToken` to obtain a Google OAuth token, then exchange it for a Firebase credential:
+
+```
+chrome.identity.getAuthToken({ interactive: true })
+  → Google OAuth token
+  → GoogleAuthProvider.credential(token)
+  → signInWithCredential(auth, credential)
+```
+
+This avoids `signInWithPopup` limitations in extension popups and works reliably with Manifest V3 service workers.
+
+### Required changes
+
+| File | Change |
+|------|--------|
+| `public/manifest.json` | Add `"identity"` back to `permissions`, add OAuth2 client ID in `oauth2` section |
+| `src/auth/token-storage.ts` | Add Firebase config constants (apiKey, projectId, etc.) |
+| `src/auth/firebase-auth.ts` | New file: `signInWithGoogle()`, `signOut()`, `onAuthStateChanged` wrapper |
+| `src/popup/popup.html` | Replace or complement PAT section with Google Sign-In button |
+| `src/popup/popup.ts` | Wire Firebase auth state into UI |
+| `build.ts` | Add `define` for Firebase config env vars (or use `.env`) |
+
+### Prerequisites
+
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable **Google** sign-in in Authentication → Sign-in method
+3. Enable the **Identity Toolkit API** in Google Cloud Console
+4. Create OAuth 2.0 credentials (Web application type) in Google Cloud Console
+5. Add the extension's Chrome Extension ID (from `chrome://extensions`) to the authorized redirect URIs:
+   ```
+   https://<extension-id>.chromiumapp.org/
+   ```
+6. In Firebase Project Settings → General → Add app → Web, copy the `firebaseConfig` object
+
+### Caveats
+
+- `chrome.identity.getAuthToken` requests the `https://www.googleapis.com/auth/userinfo.email` scope by default — adjust OAuth consent screen accordingly.
+- The extension ID changes in development (different when unpacked vs. published in Chrome Web Store). Use separate Firebase projects for dev/prod or handle both redirect URIs.
+- Firebase Admin SDK requires a backend (v1.0) for server-side operations like verifying ID tokens.
