@@ -210,9 +210,11 @@ const GITHUB_HANDLE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
 
 function extractGitHubHandle(text: string): string | null {
   // "GitHub: @user", "Github/User", "github: user", "gh: user"
+  // also "@user" near "github" context, and "github.com/user"
   const patterns = [
     /(?:^|\s)github[:\s/]+@?([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})\b/i,
     /(?:^|\s)gh[:\s/]+@?([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})\b/i,
+    /(?:^|\s)github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})(?:\/|$|\s|\.)/i,
   ];
 
   for (const pat of patterns) {

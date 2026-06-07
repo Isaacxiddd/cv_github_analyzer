@@ -60,9 +60,9 @@ async function detectAndStore(): Promise<void> {
 
       // Store full rendered DOM content so the popup can extract skills
       // even from SPAs where fetch() only gets an HTML shell.
-      // Limit to 250KB to avoid chrome.storage.session quota (~1MB).
-      const renderedText = (document.body?.innerText ?? '').slice(0, 50_000);
-      const renderedHTML = (document.body?.innerHTML ?? '').slice(0, 200_000);
+      // Limits are generous but stay under the 512KB per-key quota.
+      const renderedText = (document.body?.innerText ?? '').slice(0, 150_000);
+      const renderedHTML = (document.body?.innerHTML ?? '').slice(0, 480_000);
       await chrome.storage.session.set({
         cachedScrape: {
           url: window.location.href,
@@ -83,8 +83,17 @@ async function detectAndStore(): Promise<void> {
   }
 }
 
-// Immediate run for SSR pages + retries for SPA frameworks (React, Vue, Astro, etc.)
-// that render asynchronously after document_idle fires.
+// Immediate run for SSR pages.
 detectAndStore();
-setTimeout(detectAndStore, 1000);
-setTimeout(detectAndStore, 3000);
+
+// Watch DOM mutations for SPA frameworks (React, Vue, Astro, etc.)
+// that render asynchronously after document_idle fires.
+let debounce: ReturnType<typeof setTimeout>;
+const observer = new MutationObserver(() => {
+  clearTimeout(debounce);
+  debounce = setTimeout(detectAndStore, 400);
+});
+observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+// Safety: stop observing after 15s
+setTimeout(() => observer.disconnect(), 15_000);
