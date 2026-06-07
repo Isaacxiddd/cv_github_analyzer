@@ -66,6 +66,10 @@ Upload your PDF CV. Enter your GitHub username. Get a detailed report of inconsi
 
 **Key principle:** All processing happens in your browser. No files are uploaded. No data is sent to servers. No tracking.
 
+<p align="center">
+  <img src="screenshots/demo.png" alt="Demo screenshot" width="360">
+</p>
+
 ---
 
 ## Features
