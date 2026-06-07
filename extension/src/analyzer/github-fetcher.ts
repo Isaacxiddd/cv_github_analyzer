@@ -112,6 +112,7 @@ export async function fetchGitHubProfile(
         commitMessages: [],
         stars: r.stargazers_count,
         forks: r.forks_count,
+        sizeKb: r.size,
       };
     })
   );

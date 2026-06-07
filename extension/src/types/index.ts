@@ -59,6 +59,7 @@ export interface Repository {
   commitMessages: string[];
   stars: number;
   forks: number;
+  sizeKb: number;
 }
 
 export interface CommitActivity {

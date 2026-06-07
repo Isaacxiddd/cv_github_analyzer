@@ -19,6 +19,7 @@ function makeRepo(overrides: Partial<Repository> = {}): Repository {
     commitMessages: [],
     stars: 5,
     forks: 1,
+    sizeKb: 100,
     ...overrides,
   };
 }
@@ -148,6 +149,35 @@ describe('Rule: NO_TESTS', () => {
     const profile = makeProfile({ repos });
     const result = runCrossCheck(makeCV(), profile);
     expect(result.flags.find(f => f.ruleId === 'NO_TESTS')).toBeDefined();
+  });
+});
+
+// ─── Rule: EMPTY_REPOS ────────────────────────────────────────────────────────
+
+describe('Rule: EMPTY_REPOS', () => {
+  it('flags YELLOW when repos exist but have 0 KB size', () => {
+    const emptyRepo = makeRepo({ sizeKb: 0, languages: { JavaScript: 20000 } });
+    const cv = makeCV({ skills: ['JavaScript'] });
+    const profile = makeProfile({ repos: [emptyRepo] });
+    const result = runCrossCheck(cv, profile);
+    const flag = result.flags.find(f => f.ruleId === 'EMPTY_REPOS');
+    expect(flag).toBeDefined();
+    expect(flag!.type).toBe('YELLOW');
+  });
+
+  it('does not flag when repos have content (sizeKb > 0)', () => {
+    const cv = makeCV({ skills: ['JavaScript'] });
+    const profile = makeProfile();
+    const result = runCrossCheck(cv, profile);
+    expect(result.flags.find(f => f.ruleId === 'EMPTY_REPOS')).toBeUndefined();
+  });
+
+  it('does not flag when NO_REPOS would fire (no repos at all)', () => {
+    const cv = makeCV({ skills: ['Rust'] });
+    const profile = makeProfile({ repos: [], languageStats: {} });
+    const result = runCrossCheck(cv, profile);
+    expect(result.flags.find(f => f.ruleId === 'EMPTY_REPOS')).toBeUndefined();
+    expect(result.flags.find(f => f.ruleId === 'NO_REPOS')).toBeDefined();
   });
 });
 

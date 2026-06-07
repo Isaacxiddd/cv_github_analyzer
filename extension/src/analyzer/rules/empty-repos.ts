@@ -1,28 +1,44 @@
-import type { GitHubProfile, Flag } from '../../types/index.js';
+import type { GitHubProfile, Flag, ExtractedCV } from '../../types/index.js';
 import { TECH_LIST } from '../../data/technologies.js';
+import { githubLangFor, isImplied } from '../language-utils.js';
 
-const LANGUAGE_TECHS = new Set(
-  TECH_LIST.filter(t => t.category === 'language' && t.githubLanguage).map(t => t.canonical)
+const GITHUB_LANGS = new Set(
+  TECH_LIST.filter(t => t.githubLanguage).map(t => t.canonical)
 );
 
-export function ruleEmptyRepos(skill: string, profile: GitHubProfile): Flag | null {
-  if (!LANGUAGE_TECHS.has(skill)) return null;
-
-  const matching = profile.repos.filter(r =>
-    r.primaryLanguage === skill ||
-    (r.languages[skill] ?? 0) > 0
+function matchesSkill(repo: GitHubProfile['repos'][number], skill: string): boolean {
+  const gl = githubLangFor(skill);
+  if (!gl) return false;
+  return (
+    repo.primaryLanguage === gl ||
+    Object.keys(repo.languages).some(l => l === gl)
   );
+}
 
+export function ruleEmptyRepos(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
+  if (!GITHUB_LANGS.has(skill)) return null;
+
+  const impliedLang = githubLangFor(skill);
+  if (!impliedLang) return null;
+
+  // If NO_REPOS would fire, empty-repos doesn't apply (repos don't exist at all)
+  const hasLang = Object.keys(profile.languageStats).some(
+    l => l.toLowerCase() === impliedLang.toLowerCase()
+  );
+  if (!hasLang && !isImplied(skill, profile, cv)) return null;
+
+  const matching = profile.repos.filter(r => matchesSkill(r, skill));
   if (matching.length === 0) return null;
 
-  const allEmpty = matching.every(r => r.commitCount === 0);
+  // A repo is "empty" if its total size is 0 KB (no files committed)
+  const allEmpty = matching.every(r => r.sizeKb === 0);
   if (!allEmpty) return null;
 
   return {
     type: 'YELLOW',
     skill,
     ruleId: 'EMPTY_REPOS',
-    message: `${skill} repos exist but have no commits`,
-    evidence: `${matching.length} repo(s) with ${skill} language have 0 commits`,
+    message: `${skill} repos exist but appear empty (0 KB)`,
+    evidence: `${matching.length} repo(s) with ${impliedLang} have no file content`,
   };
 }

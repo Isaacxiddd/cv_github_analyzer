@@ -81,7 +81,7 @@ export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): Analysis
     if (f2) flags.push(f2);
     const f3 = ruleYearsMismatch(skill, profile, cv);
     if (f3) flags.push(f3);
-    const f4 = ruleEmptyRepos(skill, profile);
+    const f4 = ruleEmptyRepos(skill, profile, cv);
     if (f4) flags.push(f4);
   }
 
