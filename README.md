@@ -323,6 +323,14 @@ We welcome bug reports, feature requests, and pull requests.
 
 ---
 
+## Contact
+
+- **Author:** Isaac Garcia
+- **Email:** isaacjosegarciamarquez@gmail.com
+- **GitHub:** [@Isaacxiddd](https://github.com/Isaacxiddd)
+
+---
+
 ## License
 
 [Apache License 2.0](LICENSE) © 2025 Isaac Garcia
