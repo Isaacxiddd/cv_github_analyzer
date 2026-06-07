@@ -13,7 +13,7 @@ const EXPERIENCE_KEYWORDS = [
   'experiencia', 'trabajo', 'empleo', 'empresa',
 ];
 
-const GITHUB_URL_RE = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})(?:\/|$|\s|[\]"'>)]),/i;
+const GITHUB_URL_RE = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})(?:\/[^\s"'()]*)?/gi;
 
 function hasPortfolioSignals(): { isPortfolio: boolean; confidence: number } {
   const text = document.body?.innerText ?? '';
@@ -52,7 +52,8 @@ async function extractGitHubFromScripts(): Promise<string | null> {
   // The URL may not appear in the DOM (e.g. <button onClick> instead of <a href>).
   // Fetch external scripts and search for github.com patterns.
   const scripts = document.querySelectorAll('script[src]');
-  const urls: string[] = [];
+  let foundProfile: string | null = null;
+  let foundAny: string | null = null;
 
   for (const script of scripts) {
     const src = (script as HTMLScriptElement).src;
@@ -61,20 +62,21 @@ async function extractGitHubFromScripts(): Promise<string | null> {
       const res = await fetch(src, { signal: AbortSignal.timeout(3000) });
       if (!res.ok) continue;
       const code = await res.text();
-      const matches = code.matchAll(new RegExp(GITHUB_URL_RE.source, 'gi'));
+      const matches = code.matchAll(GITHUB_URL_RE);
       for (const m of matches) {
-        urls.push(`https://github.com/${m[1]}`);
+        const url = `https://github.com/${m[1]}`;
+        if (!foundAny) foundAny = url;
+        // Profile URL = no extra path segment after the username
+        if (!m[0].includes('/', m[0].indexOf(m[1]) + m[1].length)) {
+          if (!foundProfile) foundProfile = url;
+        }
       }
     } catch {
       // skip scripts that fail to fetch
     }
   }
 
-  if (urls.length === 0) return null;
-
-  // Prefer a profile URL (no extra path after username) over repo URLs
-  const profileUrl = urls.find(u => GITHUB_URL_RE.exec(u)?.[1] && !u.split('/')[3]);
-  return profileUrl ?? urls[0];
+  return foundProfile ?? foundAny;
 }
 
 async function detectAndStore(): Promise<void> {
