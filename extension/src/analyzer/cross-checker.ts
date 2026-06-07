@@ -9,15 +9,30 @@ function githubLangFor(skill: string): string | undefined {
   return TECH_LIST.find(t => t.canonical === skill)?.githubLanguage;
 }
 
+// Returns true if the skill can be considered verified based on related skills in the profile.
+// TypeScript in GitHub implies JavaScript. TS/JS repos imply HTML and CSS.
+function isImplied(skill: string, profile: GitHubProfile, cv: ExtractedCV): boolean {
+  const hasLangInGitHub = (lang: string) =>
+    Object.keys(profile.languageStats).some(l => l.toLowerCase() === lang.toLowerCase());
+
+  if (skill === 'JavaScript') {
+    return hasLangInGitHub('TypeScript');
+  }
+  if (skill === 'HTML' || skill === 'CSS') {
+    return hasLangInGitHub('TypeScript') || hasLangInGitHub('JavaScript');
+  }
+  return false;
+}
+
 // ─── Individual Rules ────────────────────────────────────────────────────────
 
-function ruleNoRepos(skill: string, profile: GitHubProfile): Flag | null {
+function ruleNoRepos(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
   const lang = githubLangFor(skill);
   if (!lang) return null;
   const hasLang = Object.keys(profile.languageStats).some(
     l => l.toLowerCase() === lang.toLowerCase()
   );
-  if (!hasLang) {
+  if (!hasLang && !isImplied(skill, profile, cv)) {
     return {
       type: 'RED',
       skill,
@@ -29,9 +44,10 @@ function ruleNoRepos(skill: string, profile: GitHubProfile): Flag | null {
   return null;
 }
 
-function ruleRecentOnly(skill: string, profile: GitHubProfile): Flag | null {
+function ruleRecentOnly(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
   const lang = githubLangFor(skill);
   if (!lang) return null;
+  if (isImplied(skill, profile, cv)) return null;
   const langRepos = profile.repos.filter(r => r.primaryLanguage.toLowerCase() === lang.toLowerCase());
   if (langRepos.length === 0) return null;
 
@@ -56,6 +72,7 @@ function ruleRecentOnly(skill: string, profile: GitHubProfile): Flag | null {
 }
 
 function ruleYearsMismatch(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
+  if (isImplied(skill, profile, cv)) return null;
   const claimed = cv.dates.find(d => d.skill && d.skill.toLowerCase().includes(skill.toLowerCase()));
   if (!claimed || claimed.yearsOfExperience < 1) return null;
 
@@ -183,9 +200,9 @@ export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): Analysis
   const langSkills = cv.skills.filter(s => LANGUAGE_TECHS.has(s));
 
   for (const skill of langSkills) {
-    const f1 = ruleNoRepos(skill, profile);
+    const f1 = ruleNoRepos(skill, profile, cv);
     if (f1) { flags.push(f1); continue; }
-    const f2 = ruleRecentOnly(skill, profile);
+    const f2 = ruleRecentOnly(skill, profile, cv);
     if (f2) flags.push(f2);
     const f3 = ruleYearsMismatch(skill, profile, cv);
     if (f3) flags.push(f3);
@@ -199,6 +216,19 @@ export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): Analysis
   if (testsFlag) flags.push(testsFlag);
   const ciFlag = ruleNoCI(profile);
   if (ciFlag) flags.push(ciFlag);
+
+  const flaggedSkills = new Set(flags.map(f => f.skill));
+  for (const skill of langSkills) {
+    if (!flaggedSkills.has(skill)) {
+      flags.push({
+        type: 'GREEN',
+        skill,
+        ruleId: 'VERIFIED',
+        message: `${skill} detected in GitHub repos`,
+        evidence: `${skill} is present in CV and GitHub profile`,
+      });
+    }
+  }
 
   const verified = langSkills.filter(s => !flags.some(f => f.skill === s && f.type === 'RED')).length;
 

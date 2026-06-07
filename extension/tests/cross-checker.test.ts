@@ -67,6 +67,33 @@ describe('Rule: NO_REPOS', () => {
   });
 });
 
+// ─── Rule: NO_REPOS — implied skills ─────────────────────────────────────────
+
+describe('Rule: NO_REPOS — implied skills', () => {
+  it('does not flag JavaScript when TypeScript is present in GitHub (TS implies JS)', () => {
+    const cv = makeCV({ skills: ['JavaScript', 'TypeScript'] });
+    const profile = makeProfile({ languageStats: { TypeScript: 50000 } });
+    const result = runCrossCheck(cv, profile);
+    expect(result.flags.find(f => f.ruleId === 'NO_REPOS' && f.skill === 'JavaScript')).toBeUndefined();
+  });
+
+  it('does not flag HTML/CSS when TypeScript + frontend framework are in the CV', () => {
+    const cv = makeCV({ skills: ['HTML', 'CSS', 'TypeScript', 'React'] });
+    const profile = makeProfile({ languageStats: { TypeScript: 50000 } });
+    const result = runCrossCheck(cv, profile);
+    expect(result.flags.find(f => f.ruleId === 'NO_REPOS' && f.skill === 'HTML')).toBeUndefined();
+    expect(result.flags.find(f => f.ruleId === 'NO_REPOS' && f.skill === 'CSS')).toBeUndefined();
+  });
+
+  it('does not flag HTML/CSS when TypeScript repos exist (TS repos imply web skills)', () => {
+    const cv = makeCV({ skills: ['HTML', 'CSS', 'TypeScript'] });
+    const profile = makeProfile({ languageStats: { TypeScript: 50000 } });
+    const result = runCrossCheck(cv, profile);
+    expect(result.flags.find(f => f.ruleId === 'NO_REPOS' && f.skill === 'HTML')).toBeUndefined();
+    expect(result.flags.find(f => f.ruleId === 'NO_REPOS' && f.skill === 'CSS')).toBeUndefined();
+  });
+});
+
 // ─── Rule: RECENT_ONLY ────────────────────────────────────────────────────────
 
 describe('Rule: RECENT_ONLY', () => {

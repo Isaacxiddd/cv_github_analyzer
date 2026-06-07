@@ -61,7 +61,8 @@ export type RuleId =
   | 'NO_README'
   | 'NO_TESTS'
   | 'INACTIVE'
-  | 'NO_CI';
+  | 'NO_CI'
+  | 'VERIFIED';
 
 export interface Flag {
   type: FlagType;
@@ -90,12 +91,36 @@ export interface AnalysisResult {
   };
 }
 
-// ─── Messages (popup ↔ background) ───────────────────────────────────────────
+// ─── History ─────────────────────────────────────────────────────────────────
+
+export interface HistoryFlag {
+  level: 'red' | 'yellow' | 'green' | 'gray';
+  skill: string;
+  reason: string;
+}
+
+export interface HistoryEntry {
+  id: string;
+  github_username: string;
+  cv_filename: string;
+  score_github: number;
+  score_cv: number;
+  score_coherence: number;
+  score_global: number;
+  flags: HistoryFlag[];
+  analyzed_at: string;
+  result: AnalysisResult;
+}
+
+export const HISTORY_KEY = 'analysis_history';
+
+// ─── Messages (popup ↔ background, content ↔ background) ────────────────────
 
 export interface AnalyzeRequest {
   type: 'ANALYZE';
   cvText: string;
   githubUsername: string;
+  token?: string;
 }
 
 export interface AnalyzeResponse {
@@ -108,7 +133,16 @@ export interface AnalyzeError {
   message: string;
 }
 
-export type BackgroundMessage = AnalyzeRequest;
+export interface WidgetShow {
+  type: 'WIDGET_SHOW';
+  entry: HistoryEntry;
+}
+
+export interface WidgetHide {
+  type: 'WIDGET_HIDE';
+}
+
+export type BackgroundMessage = AnalyzeRequest | WidgetShow | WidgetHide;
 export type BackgroundResponse = AnalyzeResponse | AnalyzeError;
 
 // ─── GitHub fetcher internal types ───────────────────────────────────────────
