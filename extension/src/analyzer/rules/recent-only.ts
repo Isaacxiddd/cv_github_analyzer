@@ -21,8 +21,8 @@ export function ruleRecentOnly(skill: string, profile: GitHubProfile, cv: Extrac
       type: 'YELLOW',
       skill,
       ruleId: 'RECENT_ONLY',
-      message: `Public ${skill} activity is recent (< 1 year)`,
-      evidence: `Oldest ${lang} repo created ${Math.round(monthsOld)} months ago`,
+      message: `Public ${skill} evidence detected only in the last 12 months`,
+      evidence: `Oldest public ${lang} repo was created ${Math.round(monthsOld)} months ago`,
     };
   }
   return null;

@@ -74,6 +74,10 @@ export function generateReport(result: AnalysisResult, source: ReportSource = 'c
 
   ${metadataSection(result)}
 
+  <p style="margin:4px 0 12px;font-size:0.75em;color:#94a3b8;font-style:italic">
+    Analysis based on public GitHub data. Absence of evidence is not evidence of absence.
+  </p>
+
   <div class="gauges" style="display:flex;gap:16px;justify-content:center;margin:16px 0;flex-wrap:wrap">
     ${scoreGauge(srcLabel, scores.cv)}
     ${scoreGauge('GitHub', scores.github)}

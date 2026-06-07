@@ -11,8 +11,8 @@ export function ruleNoReadme(profile: GitHubProfile): Flag | null {
       type: 'YELLOW',
       skill: 'Documentation',
       ruleId: 'NO_README',
-      message: `${noReadme} of ${relevant.length} active repos lack documentation`,
-      evidence: `${Math.round(ratio * 100)}% of recently active repos have no README file`,
+      message: `No README detected in ${noReadme} of ${relevant.length} analyzed repositories`,
+      evidence: `${Math.round(ratio * 100)}% of recently active repos reviewed had no README file`,
     };
   }
   return null;

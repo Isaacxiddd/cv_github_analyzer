@@ -12,8 +12,8 @@ export function ruleInactive(profile: GitHubProfile): Flag | null {
       type: 'YELLOW',
       skill: 'General Activity',
       ruleId: 'INACTIVE',
-      message: `No recent public activity — last push was ${latest}`,
-      evidence: `No commits found in any repo within the last 6 months`,
+      message: `No public commits detected in the last 6 months — last push was ${latest}`,
+      evidence: `0 active repos with commits in the analyzed period (180 days)`,
     };
   }
   return null;

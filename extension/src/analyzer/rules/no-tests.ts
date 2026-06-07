@@ -11,8 +11,8 @@ export function ruleNoTests(profile: GitHubProfile): Flag | null {
       type: 'YELLOW',
       skill: 'Testing',
       ruleId: 'NO_TESTS',
-      message: `No public testing evidence in ${noTests} of ${relevant.length} active repos`,
-      evidence: `Reviewed ${relevant.length} repos with recent activity and documentation; ${noTests} lack test files or directories`,
+      message: `No public testing evidence detected in ${noTests} of ${relevant.length} analyzed repositories`,
+      evidence: `${relevant.length} recently active repos reviewed; ${noTests} had no test files or directories`,
     };
   }
   return null;

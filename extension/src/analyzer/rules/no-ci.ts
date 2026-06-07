@@ -11,8 +11,8 @@ export function ruleNoCI(profile: GitHubProfile): Flag | null {
       type: 'GRAY',
       skill: 'CI/CD',
       ruleId: 'NO_CI',
-      message: `No CI/CD evidence in ${noCI} of ${relevant.length} active repos`,
-      evidence: `${Math.round(ratio * 100)}% of recently active repos lack GitHub Actions or CI config`,
+      message: `No public CI/CD workflows detected in ${noCI} of ${relevant.length} analyzed repositories`,
+      evidence: `${Math.round(ratio * 100)}% of recently active repos reviewed had no CI configuration`,
     };
   }
   return null;

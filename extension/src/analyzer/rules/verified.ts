@@ -13,7 +13,7 @@ export function ruleVerified(skill: string, profile: GitHubProfile): Flag {
     type: 'GREEN',
     skill,
     ruleId: 'VERIFIED',
-    message: `${skill} detected in GitHub repos`,
-    evidence: `Found in ${repos.length} repo(s): ${names}${extra}`,
+      message: `${skill} evidence identified in public repositories`,
+      evidence: `Found in ${repos.length} public repo(s): ${names}${extra}`,
   };
 }

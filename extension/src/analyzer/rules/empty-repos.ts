@@ -36,7 +36,7 @@ export function ruleEmptyRepos(skill: string, profile: GitHubProfile, cv: Extrac
     type: 'YELLOW',
     skill,
     ruleId: 'EMPTY_REPOS',
-    message: `${skill} repos exist but appear to be empty stubs`,
-    evidence: `${matching.length} repo(s) with ${impliedLang} have no file content (0 KB) — likely placeholder repositories`,
+      message: `No file content detected in ${skill} repositories`,
+      evidence: `${matching.length} public repo(s) with ${impliedLang} registered but containing 0 KB of file content`,
   };
 }

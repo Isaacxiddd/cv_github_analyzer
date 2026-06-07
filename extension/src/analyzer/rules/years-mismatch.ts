@@ -25,8 +25,8 @@ export function ruleYearsMismatch(skill: string, profile: GitHubProfile, cv: Ext
       type: 'RED',
       skill,
       ruleId: 'YEARS_MISMATCH',
-      message: `Claimed ${claimed.yearsOfExperience}y of ${skill} but public GitHub activity shows ~${githubYears.toFixed(1)}y`,
-      evidence: `Oldest public ${lang} repo: ${oldest.toISOString().slice(0, 7)} — claim exceeds observable history by ${diff.toFixed(1)}y`,
+      message: `Claimed ${claimed.yearsOfExperience}y of ${skill} — public GitHub evidence shows ~${githubYears.toFixed(1)}y`,
+      evidence: `Oldest public ${lang} repo found from ${oldest.toISOString().slice(0, 7)}; difference of ${diff.toFixed(1)}y between claim and observed history`,
     };
   }
   return null;
