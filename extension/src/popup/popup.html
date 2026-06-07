@@ -8,7 +8,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0 }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      width: 420px;
+      width: 480px;
       min-height: 200px;
       background: #f8fafc;
       color: #1e293b;
@@ -16,72 +16,163 @@
     .header {
       background: #0f172a;
       color: #f8fafc;
-      padding: 14px 16px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
       gap: 10px;
     }
-    .header h1 { font-size: 1em; font-weight: 600 }
-    .header span { font-size: 0.75em; color: #94a3b8 }
-    .body { padding: 16px; display: flex; flex-direction: column; gap: 12px }
+    .header h1 { font-size: 0.95em; font-weight: 600; flex: 1 }
+    .header .sub { font-size: 0.72em; color: #94a3b8 }
+    .btn-header {
+      background: none;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 4px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.75em;
+      transition: all 0.15s;
+    }
+    .btn-header:hover { background: #1e293b; color: #f8fafc }
+    .body { padding: 12px; display: flex; flex-direction: column; gap: 10px }
 
     .drop-zone {
       border: 2px dashed #cbd5e1;
       border-radius: 8px;
-      padding: 20px;
+      padding: 16px;
       text-align: center;
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
     }
     .drop-zone:hover, .drop-zone.over { border-color: #6366f1; background: #eef2ff }
     .drop-zone.has-file { border-color: #22c55e; background: #f0fdf4 }
-    .drop-zone-icon { font-size: 1.8em; margin-bottom: 6px }
-    .drop-zone-text { font-size: 0.85em; color: #64748b }
-    .drop-zone-name { font-size: 0.85em; color: #16a34a; font-weight: 600; margin-top: 4px }
+    .drop-zone-icon { font-size: 1.5em; margin-bottom: 4px }
+    .drop-zone-text { font-size: 0.8em; color: #64748b }
+    .drop-zone-name { font-size: 0.8em; color: #16a34a; font-weight: 600; margin-top: 4px }
 
-    label { font-size: 0.82em; font-weight: 600; color: #374151 }
+    label { font-size: 0.78em; font-weight: 600; color: #374151 }
     input[type="text"] {
       width: 100%;
-      padding: 8px 12px;
+      padding: 7px 10px;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
-      font-size: 0.9em;
+      font-size: 0.85em;
       background: #fff;
-      margin-top: 4px;
+      margin-top: 3px;
     }
     input[type="text"]:focus { outline: none; border-color: #6366f1 }
 
+    .row { display: flex; gap: 8px; align-items: end }
+    .row input { flex: 1 }
     button#analyze-btn {
-      width: 100%;
-      padding: 10px;
+      padding: 7px 16px;
       background: #4f46e5;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 0.9em;
+      border-radius: 6px;
+      font-size: 0.82em;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      white-space: nowrap;
     }
     button#analyze-btn:hover { background: #4338ca }
     button#analyze-btn:disabled { background: #94a3b8; cursor: not-allowed }
 
     #status {
-      font-size: 0.8em;
+      font-size: 0.78em;
       color: #64748b;
       text-align: center;
-      min-height: 18px;
+      min-height: 16px;
     }
     #status.error { color: #dc2626 }
 
+    .token-section {
+      background: #f1f5f9;
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+    .token-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .token-header .label { font-size: 0.76em; font-weight: 600; color: #374151 }
+    .token-header .status { font-size: 0.72em; color: #64748b }
+    .token-header .status.ok { color: #16a34a }
+    .token-header .arrow { font-size: 0.65em; color: #94a3b8; transition: transform 0.2s }
+    .token-header .arrow.open { transform: rotate(90deg) }
+    .token-body { display: none; margin-top: 6px; gap: 5px }
+    .token-body.open { display: flex; flex-direction: column }
+    .token-input-row { display: flex; gap: 5px }
+    .token-input-row input {
+      flex: 1; padding: 5px 8px; border: 1px solid #e2e8f0;
+      border-radius: 5px; font-size: 0.74em; font-family: monospace; background: #fff;
+    }
+    .token-input-row input:focus { outline: none; border-color: #6366f1 }
+    .token-input-row .btn-icon {
+      padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 5px;
+      background: #fff; cursor: pointer; font-size: 0.76em; color: #64748b;
+    }
+    .token-input-row .btn-icon:hover { background: #f1f5f9 }
+    .token-hint { font-size: 0.68em; color: #94a3b8; line-height: 1.4 }
+    .token-hint a { color: #6366f1 }
+    .token-clear {
+      background: none; border: none; font-size: 0.68em; color: #dc2626;
+      cursor: pointer; padding: 0; text-align: left;
+    }
+    .token-clear:hover { text-decoration: underline }
+
+    /* ── History Panel ── */
+    .history-panel {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .history-header .title { font-size: 0.78em; font-weight: 600; color: #374151 }
+    .history-header .clear-btn {
+      background: none; border: none; font-size: 0.68em; color: #94a3b8;
+      cursor: pointer; padding: 0;
+    }
+    .history-header .clear-btn:hover { color: #dc2626 }
+    .history-list {
+      max-height: 140px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      background: #fff;
+      border: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .history-item:hover { background: #f8fafc }
+    .history-item .h-user { font-size: 0.78em; font-weight: 600; flex: 1 }
+    .history-item .h-score { font-size: 0.72em; font-weight: 600; color: #16a34a }
+    .history-item .h-date { font-size: 0.65em; color: #94a3b8 }
+    .history-empty { font-size: 0.74em; color: #94a3b8; text-align: center; padding: 12px 0 }
+
     #results {
-      max-height: 480px;
+      max-height: 400px;
       overflow-y: auto;
       border-top: 1px solid #e2e8f0;
-      padding-top: 12px;
+      padding-top: 10px;
     }
     #results:empty { display: none }
-
     input[type="file"] { display: none }
   </style>
 </head>
@@ -89,12 +180,12 @@
   <div class="header">
     <div>
       <h1>CV ↔ GitHub Analyzer</h1>
-      <span>Detect skill inconsistencies</span>
+      <span class="sub">Detect skill inconsistencies</span>
     </div>
+    <button class="btn-header" id="minimize-btn">—</button>
   </div>
 
   <div class="body">
-    <!-- PDF Drop Zone -->
     <div class="drop-zone" id="drop-zone">
       <div class="drop-zone-icon">📄</div>
       <div class="drop-zone-text">Drop your CV (PDF) here or click to select</div>
@@ -102,15 +193,43 @@
     </div>
     <input type="file" id="file-input" accept=".pdf" />
 
-    <!-- GitHub username -->
-    <div>
-      <label for="username-input">GitHub username</label>
-      <input type="text" id="username-input" placeholder="e.g. torvalds" autocomplete="off" />
+    <div class="row">
+      <div style="flex:1">
+        <label for="username-input">GitHub username</label>
+        <input type="text" id="username-input" placeholder="e.g. torvalds" autocomplete="off" />
+      </div>
+      <button id="analyze-btn" disabled>Analyze</button>
     </div>
 
-    <button id="analyze-btn" disabled>Analyze</button>
+    <div class="token-section" id="token-section">
+      <div class="token-header" id="token-toggle">
+        <span class="label">🔑 GitHub Token</span>
+        <span class="status" id="token-status">Not set</span>
+        <span class="arrow" id="token-arrow">▶</span>
+      </div>
+      <div class="token-body" id="token-body">
+        <div class="token-input-row">
+          <input type="password" id="token-input" placeholder="ghp_xxxxxxxxxxxx" spellcheck="false" autocomplete="off" />
+          <button class="btn-icon" id="token-toggle-vis" title="Toggle visibility">👁</button>
+        </div>
+        <p class="token-hint">
+          Paste a <a href="https://github.com/settings/tokens" target="_blank">GitHub PAT</a>
+          to raise the API rate limit to 5 000 req/h.
+        </p>
+        <button class="token-clear" id="token-clear">Remove token</button>
+      </div>
+    </div>
+
     <div id="status"></div>
     <div id="results"></div>
+
+    <div class="history-panel" id="history-panel">
+      <div class="history-header">
+        <span class="title">📋 Analysis History</span>
+        <button class="clear-btn" id="clear-history">Clear history</button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
   </div>
 
   <script src="popup.js" type="module"></script>
