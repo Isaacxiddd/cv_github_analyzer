@@ -340,4 +340,4 @@ See:
 
 Licensed under the Apache License 2.0.
 
-© 2025 Isaac Garcia
+© 2026 Isaac Garcia
