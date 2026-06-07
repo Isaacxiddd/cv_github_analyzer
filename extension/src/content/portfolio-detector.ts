@@ -79,47 +79,50 @@ async function extractGitHubFromScripts(): Promise<string | null> {
   return foundProfile ?? foundAny;
 }
 
+// Shared promise so that both detectAndStore() and the onMessage handler
+// can await the same JS bundle fetch without duplicating work.
+let scriptsGithubUrlPromise: Promise<string | null> | null = null;
 let scriptsFetched = false;
+
+function ensureScriptsFetched(): Promise<string | null> {
+  if (!scriptsGithubUrlPromise) {
+    scriptsGithubUrlPromise = extractGitHubFromScripts();
+  }
+  return scriptsGithubUrlPromise;
+}
 
 // ─── Live DOM query (popup requests this on user click) ──────────────────────
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === 'getGithubFromDOM') {
-    const urls = new Set<string>();
+    (async () => {
+      // 1. <a href> elements
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href*="github.com"]')) {
+        const url = a.href.replace(/\/+$/, '');
+        const isProfile = !url.replace(/^https?:\/\/github\.com\//i, '').includes('/');
+        if (isProfile) { sendResponse({ url }); return; }
+      }
 
-    // 1. <a href> elements
-    const anchors = document.querySelectorAll<HTMLAnchorElement>('a[href*="github.com"]');
-    for (const a of anchors) urls.add(a.href);
-
-    // 2. Any attribute containing "github.com" (onclick, data-href, etc.)
-    const all = document.querySelectorAll<HTMLElement>('*');
-    for (const el of all) {
-      for (const attr of el.attributes) {
-        if ((attr.value ?? '').toLowerCase().includes('github.com') && attr.name !== 'href') {
-          const m = attr.value.match(/https?:\/\/(?:www\.)?github\.com\/[^\s"'`]+/i);
-          if (m) urls.add(m[0].replace(/\/+$/, ''));
+      // 2. Any attribute containing "github.com" (onclick, data-href, etc.)
+      for (const el of document.querySelectorAll<HTMLElement>('*')) {
+        for (const attr of el.attributes) {
+          if ((attr.value ?? '').toLowerCase().includes('github.com') && attr.name !== 'href') {
+            const m = attr.value.match(/https?:\/\/(?:www\.)?github\.com\/[^\s"'`]+/i);
+            if (m) { sendResponse({ url: m[0].replace(/\/+$/, '') }); return; }
+          }
         }
       }
-    }
 
-    // 3. innerText (the URL might appear as plain text)
-    const bodyText = document.body?.innerText ?? '';
-    const textMatches = bodyText.matchAll(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})/gi);
-    for (const m of textMatches) {
-      urls.add(`https://github.com/${m[1]}`);
-    }
+      // 3. innerText
+      const bodyText = document.body?.innerText ?? '';
+      const textMatch = bodyText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/i);
+      if (textMatch) { sendResponse({ url: `https://github.com/${textMatch[1]}` }); return; }
 
-    // Prefer profile URLs (no path segment after the username) over repo URLs
-    const sorted = [...urls].sort((a, b) => {
-      const aIsProfile = !a.replace(/^https?:\/\/github\.com\//i, '').includes('/');
-      const bIsProfile = !b.replace(/^https?:\/\/github\.com\//i, '').includes('/');
-      if (aIsProfile && !bIsProfile) return -1;
-      if (!aIsProfile && bIsProfile) return 1;
-      return 0;
-    });
-
-    sendResponse({ url: sorted[0] ?? null, allUrls: sorted });
-    return;
+      // 4. Fallback: fetch JS bundles (catches <button onClick> closures)
+      const bundleUrl = await ensureScriptsFetched();
+      sendResponse({ url: bundleUrl, source: 'bundle' });
+    })();
+    return true; // keep channel open for async response
   }
 });
 
@@ -150,11 +153,10 @@ async function detectAndStore(): Promise<void> {
       };
       await chrome.storage.session.set({ cachedScrape: baseEntry });
 
-      // Extract GitHub URL from JS bundles asynchronously (first call only).
-      // Catches URLs in <button onClick> closures, not visible in the DOM.
+      // Fire-and-forget: update cache when JS bundle fetch completes.
       if (!scriptsFetched) {
         scriptsFetched = true;
-        extractGitHubFromScripts().then(scriptsUrl => {
+        ensureScriptsFetched().then(scriptsUrl => {
           if (!scriptsUrl) return;
           chrome.storage.session.get('cachedScrape').then(({ cachedScrape }) => {
             if (cachedScrape?.url === window.location.href) {
