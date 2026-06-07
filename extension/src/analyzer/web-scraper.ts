@@ -3,50 +3,93 @@ import { TECH_LIST } from '../parser/tech-list.js';
 import type { ExtractedCV, ScrapedPortfolio } from '../types/index.js';
 
 // ─── Seniority detection ────────────────────────────────────────────────────
+// Strategy (in priority order):
+//   1. Years of experience — parse explicit numbers ("3 years", "10+ años", "2018–2024")
+//   2. Title/bio keywords — only from first screen of text (avoids testimonial pollution)
+//   3. Fallback — full-text keyword scan (low confidence)
 
-const SENIORITY_SIGNALS: Record<string, string[]> = {
-  junior: [
-    'junior', 'jr.', 'jr ', 'entry level', 'entry-level', 'intern',
-    'trainee', 'graduate', 'recent graduate', '0-2 years', '1 year',
-    '2 years', 'bootcamp', 'fresher', 'associate developer',
-  ],
-  mid: [
-    'mid level', 'mid-level', 'intermediate', '3 years', '4 years',
-    '5 years', '3-5 years', 'semi-senior', 'semi senior', 'ssr',
-    'software developer', 'software engineer',
-  ],
-  senior: [
-    'senior', 'sr.', 'sr ', 'lead', 'tech lead', 'principal',
-    'staff engineer', '7 years', '8 years', '9 years', '10 years',
-    '10+ years', '+5 years', '+7 years', 'architect', 'head of',
-    'engineering manager', 'vp of engineering',
-  ],
-};
+const YEARS_RE = [
+  /(\d{1,2})\s*(?:\+|más\s*de\s*)?\s*(?:years?|años?|yr)s?(?:\s+(?:of|de)\s+(?:experience|experiencia))?/gi,
+  /(?:más\s+de|over|more\s+than|>)\s*(\d{1,2})\s*(?:years?|años?|yr)s?/gi,
+];
 
-function detectSeniority(text: string): ScrapedPortfolio['seniority'] {
+const DATE_RANGE_RE = /(\d{4})\s*[–\-—/]+\s*(\d{4}|present|current|actualidad|ahora)/gi;
+
+const SENIOR_TITLES = [
+  'senior', 'sr.', 'lead', 'tech lead', 'principal', 'staff', 'architect',
+  'head of', 'engineering manager', 'vp of',
+];
+
+const MID_TITLES = [
+  'mid level', 'mid-level', 'intermediate', 'semi-senior', 'semi senior', 'ssr',
+  'software developer', 'software engineer', 'fullstack', 'full stack',
+  'desarrollador', 'desarrolladora', 'ingeniero', 'ingeniera', 'programador',
+];
+
+const JUNIOR_TITLES = [
+  'junior', 'jr.', 'entry level', 'entry-level', 'intern', 'trainee',
+  'graduate', 'recent graduate', 'bootcamp', 'fresher', 'associate developer',
+];
+
+function extractYearsOfExperience(text: string): number {
   const lower = text.toLowerCase();
-  const found: Record<string, string[]> = { junior: [], mid: [], senior: [] };
+  let maxYears = 0;
 
-  for (const [level, signals] of Object.entries(SENIORITY_SIGNALS)) {
-    for (const signal of signals) {
-      if (lower.includes(signal)) {
-        found[level].push(signal);
-      }
+  // "3 years", "10 años", "5+ years", "más de 10 años"
+  for (const re of YEARS_RE) {
+    const matches = lower.matchAll(re);
+    for (const m of matches) {
+      const y = parseInt(m[1], 10);
+      if (y > 0 && y <= 50) maxYears = Math.max(maxYears, y);
     }
   }
 
-  const { senior: s, mid: m, junior: j } = found;
-  const total = s.length + m.length + j.length;
-
-  if (total === 0) return { level: 'unknown', confidence: 'low', signals: [] };
-
-  if (s.length >= m.length && s.length >= j.length) {
-    return { level: 'senior', confidence: s.length >= 2 ? 'high' : 'medium', signals: s };
+  // "2018 - 2024", "2020–present"
+  const ranges = lower.matchAll(DATE_RANGE_RE);
+  for (const m of ranges) {
+    const start = parseInt(m[1], 10);
+    if (start < 2000 || start > 2030) continue;
+    const endStr = m[2].toLowerCase();
+    const end = (endStr === 'present' || endStr === 'current' || endStr === 'actualidad' || endStr === 'ahora')
+      ? new Date().getFullYear()
+      : parseInt(m[2], 10);
+    if (end >= start && end <= 2030) {
+      maxYears = Math.max(maxYears, end - start);
+    }
   }
-  if (m.length >= j.length) {
-    return { level: 'mid', confidence: m.length >= 2 ? 'high' : 'medium', signals: m };
-  }
-  return { level: 'junior', confidence: j.length >= 2 ? 'high' : 'medium', signals: j };
+
+  return maxYears;
+}
+
+function detectSeniority(text: string): ScrapedPortfolio['seniority'] {
+  const lower = text.toLowerCase();
+
+  // 1. Years-based (most reliable)
+  const years = extractYearsOfExperience(text);
+  if (years >= 7) return { level: 'senior', confidence: 'high', signals: [`${years}+ years`] };
+  if (years >= 4) return { level: 'mid', confidence: 'high', signals: [`${years} years`] };
+  if (years >= 1) return { level: 'junior', confidence: 'high', signals: [`${years} year(s)`] };
+
+  // 2. Title/bio keywords — only in first 600 chars to avoid testimonial pollution
+  const header = lower.slice(0, 600);
+  const hasSenior = SENIOR_TITLES.some(t => header.includes(t));
+  const hasMid = MID_TITLES.some(t => header.includes(t));
+  const hasJunior = JUNIOR_TITLES.some(t => header.includes(t));
+
+  if (hasSenior) return { level: 'senior', confidence: 'medium', signals: ['title match'] };
+  if (hasMid) return { level: 'mid', confidence: 'medium', signals: ['title match'] };
+  if (hasJunior) return { level: 'junior', confidence: 'medium', signals: ['title match'] };
+
+  // 3. Full-text keyword scan (low confidence, may pick up testimonials)
+  const fullHasSenior = SENIOR_TITLES.some(t => lower.includes(t));
+  const fullHasMid = MID_TITLES.some(t => lower.includes(t));
+  const fullHasJunior = JUNIOR_TITLES.some(t => lower.includes(t));
+
+  if (fullHasSenior) return { level: 'senior', confidence: 'low', signals: ['full-text keyword'] };
+  if (fullHasMid) return { level: 'mid', confidence: 'low', signals: ['full-text keyword'] };
+  if (fullHasJunior) return { level: 'junior', confidence: 'low', signals: ['full-text keyword'] };
+
+  return { level: 'unknown', confidence: 'low', signals: [] };
 }
 
 // ─── DOM cleaning ────────────────────────────────────────────────────────────
