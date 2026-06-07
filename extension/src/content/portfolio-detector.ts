@@ -91,6 +91,35 @@ function ensureScriptsFetched(): Promise<string | null> {
   return scriptsGithubUrlPromise;
 }
 
+// ─── React props scanner ──────────────────────────────────────────────────────
+// React stores event handler props (onClick, onMouseDown, etc.) as plain JS
+// objects on DOM elements with a key like __reactProps$<hash>.  We can read
+// the handler's source via toString() and extract GitHub URLs from it.
+
+const HANDLER_PROPS = ['onClick', 'onMouseDown', 'onTouchEnd', 'onPointerDown', 'onAuxClick'];
+
+function findGitHubInReactProps(): string | null {
+  for (const el of document.querySelectorAll('button, a, [role="button"]')) {
+    for (const key of Object.keys(el)) {
+      if (!key.startsWith('__reactProps$') && !key.startsWith('__reactEventHandlers$')) continue;
+      const props = (el as any)[key];
+      if (!props) continue;
+      for (const hp of HANDLER_PROPS) {
+        const handler = props[hp];
+        if (typeof handler !== 'function') continue;
+        try {
+          const src = handler.toString();
+          const m = src.match(/https?:\/\/(?:www\.)?github\.com\/([^\s"'`]+)/i);
+          if (m) return m[0].replace(/\/+$/, '');
+        } catch {
+          // some built-in functions throw on toString
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // ─── Live DOM query (popup requests this on user click) ──────────────────────
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -103,7 +132,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (isProfile) { sendResponse({ url }); return; }
       }
 
-      // 2. Any attribute containing "github.com" (onclick, data-href, etc.)
+      // 2. React props (onClick / onMouseDown with window.open('github.com/...'))
+      const reactUrl = findGitHubInReactProps();
+      if (reactUrl) { sendResponse({ url: reactUrl, source: 'react' }); return; }
+
+      // 3. Any DOM attribute containing "github.com"
       for (const el of document.querySelectorAll<HTMLElement>('*')) {
         for (const attr of el.attributes) {
           if ((attr.value ?? '').toLowerCase().includes('github.com') && attr.name !== 'href') {
@@ -113,12 +146,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         }
       }
 
-      // 3. innerText
+      // 4. innerText
       const bodyText = document.body?.innerText ?? '';
       const textMatch = bodyText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/i);
       if (textMatch) { sendResponse({ url: `https://github.com/${textMatch[1]}` }); return; }
 
-      // 4. Fallback: fetch JS bundles (catches <button onClick> closures)
+      // 5. Fallback: fetch JS bundles (slow but catches deeply buried closures)
       const bundleUrl = await ensureScriptsFetched();
       sendResponse({ url: bundleUrl, source: 'bundle' });
     })();
