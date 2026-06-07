@@ -83,4 +83,8 @@ async function detectAndStore(): Promise<void> {
   }
 }
 
+// Immediate run for SSR pages + retries for SPA frameworks (React, Vue, Astro, etc.)
+// that render asynchronously after document_idle fires.
 detectAndStore();
+setTimeout(detectAndStore, 1000);
+setTimeout(detectAndStore, 3000);
