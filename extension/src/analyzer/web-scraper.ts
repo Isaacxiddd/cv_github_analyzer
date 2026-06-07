@@ -188,7 +188,7 @@ function extractTechsFromHTML(html: string): string[] {
 
 // ─── SPA cache (from content script) ──────────────────────────────────────────
 
-async function getCachedScrape(url: string): Promise<{ html: string; text: string } | null> {
+async function getCachedScrape(url: string): Promise<{ html: string; text: string; scriptsGithubUrl?: string } | null> {
   try {
     const { cachedScrape } = await chrome.storage.session.get('cachedScrape');
     if (
@@ -198,7 +198,7 @@ async function getCachedScrape(url: string): Promise<{ html: string; text: strin
     ) {
       // Reconstruct a full HTML document from the rendered DOM content
       const html = `<!DOCTYPE html><html><head><title>${cachedScrape.url}</title></head><body>${cachedScrape.renderedHTML}</body></html>`;
-      return { html, text: cachedScrape.renderedText };
+      return { html, text: cachedScrape.renderedText, scriptsGithubUrl: cachedScrape.scriptsGithubUrl };
     }
   } catch {
     // chrome.storage.session may not be available (e.g. in tests)
@@ -276,6 +276,12 @@ export async function scrapePortfolio(url: string): Promise<ScrapedPortfolio> {
   if (!githubLink && !links.github) {
     const userFromText = extractGitHubHandle(rawText);
     if (userFromText) links.github = `https://github.com/${userFromText}`;
+  }
+
+  // Fallback: GitHub URL extracted from JS bundles by the content script
+  // (catches URLs in <button onClick> or event handlers, not visible in DOM)
+  if (!githubLink && !links.github && cached?.scriptsGithubUrl) {
+    links.github = cached.scriptsGithubUrl;
   }
 
   return {
