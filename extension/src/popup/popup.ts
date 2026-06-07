@@ -337,7 +337,12 @@ btnScrape.addEventListener('click', async () => {
 
     if (portfolio.links.github) {
       const gh = portfolio.links.github.split('github.com/')[1]?.split('/')[0];
-      if (gh && !usernameInput.value) usernameInput.value = gh;
+      if (gh && !usernameInput.value) {
+        usernameInput.value = gh;
+        // Si se auto-completo el usuario desde el DOM/react props, hay portfolio
+        // + GitHub → podemos lanzar el analyze directamente (el portfolio actua como CV)
+        setTimeout(() => analyzeBtn.click(), 100);
+      }
     }
 
     updateButton();

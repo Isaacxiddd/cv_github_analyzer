@@ -95,6 +95,7 @@ function ensureScriptsFetched(): Promise<string | null> {
 // React stores event handler props (onClick, onMouseDown, etc.) as plain JS
 // objects on DOM elements with a key like __reactProps$<hash>.  We can read
 // the handler's source via toString() and extract GitHub URLs from it.
+// Also checks direct href, children text, and element textContent.
 
 const HANDLER_PROPS = ['onClick', 'onMouseDown', 'onTouchEnd', 'onPointerDown', 'onAuxClick'];
 
@@ -104,6 +105,8 @@ function findGitHubInReactProps(): string | null {
       if (!key.startsWith('__reactProps$') && !key.startsWith('__reactEventHandlers$')) continue;
       const props = (el as any)[key];
       if (!props) continue;
+
+      // 1. Event handlers (onClick, onMouseDown, etc.) with window.open('github.com/...')
       for (const hp of HANDLER_PROPS) {
         const handler = props[hp];
         if (typeof handler !== 'function') continue;
@@ -115,7 +118,31 @@ function findGitHubInReactProps(): string | null {
           // some built-in functions throw on toString
         }
       }
+
+      // 2. Direct href prop (React <a href="github.com/...">)
+      if (props.href && typeof props.href === 'string') {
+        const m = props.href.match(/https?:\/\/(?:www\.)?github\.com\/([^\s"'`]+)/i);
+        if (m) return m[0].replace(/\/+$/, '');
+      }
+
+      // 3. Children text or aria-label containing GitHub URL
+      const textToCheck = [
+        props.children,
+        props['aria-label'],
+        props.title,
+        props.alt,
+        props.placeholder,
+      ].filter(Boolean).join(' ');
+      if (textToCheck) {
+        const m = textToCheck.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/i);
+        if (m) return `https://github.com/${m[1]}`;
+      }
     }
+
+    // 4. Direct element text content (no React internals needed)
+    const text = (el.textContent ?? '') + ' ' + (el.getAttribute('aria-label') ?? '');
+    const m = text.match(/(?:https?:\/\/)?github\.com\/([a-zA-Z0-9_-]+)/i);
+    if (m) return `https://github.com/${m[1]}`;
   }
   return null;
 }
