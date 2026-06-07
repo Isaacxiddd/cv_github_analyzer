@@ -23,5 +23,8 @@
   },
   "dependencies": {
     "pdfjs-dist": "^4.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }

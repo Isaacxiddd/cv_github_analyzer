@@ -54,7 +54,7 @@ const DATE_RANGE_PATTERNS: RegExp[] = [
 ];
 
 const YEARS_CLAIMED_PATTERN =
-  /(\d+(?:\.\d+)?)\+?\s*(?:años?|years?)\s*(?:de\s+)?(?:experience?|experiencia|working with|con|en|of)?\s*([A-Za-z.#+\s]{2,20})?/gi;
+  /(\d+(?:\.\d+)?)\+?\s*(?:años?|years?)\s+(?:of\s+experience\s+(?:with|in|using)\s+|de\s+experiencia\s+(?:con|en)\s+|(?:de|of|con|en|with|using)\s+)([A-Za-z][A-Za-z.#+]{1,20})/gi;
 
 export function extractDates(text: string): ExperienceDate[] {
   const results: ExperienceDate[] = [];
@@ -70,27 +70,27 @@ export function extractDates(text: string): ExperienceDate[] {
       let start: Date | null = null;
       let end: Date | null = null;
 
-      if (/\d{4}/.test(match[1] ?? '')) {
+      const isYearOnlyStart = /^\d{4}$/.test((match[1] ?? '').trim());
+
+      if (isYearOnlyStart) {
+        // Pattern: Year – Year/present
         const y = parseYear(match[1]);
         if (y) start = toDate(y);
+        const endPart = (match[2] ?? '').trim();
+        if (PRESENT_WORDS.test(endPart)) end = new Date();
+        else { const ey = parseYear(endPart); if (ey) end = toDate(ey); }
       } else {
+        // Pattern: Month Year – Month/present Year?
         const mo = parseMonth(match[1] ?? '');
         const yr = parseYear(match[2] ?? '');
         if (mo !== null && yr) start = toDate(yr, mo);
-      }
-
-      const endPart = match[3] ?? '';
-      if (PRESENT_WORDS.test(endPart)) {
-        end = new Date();
-      } else if (/\d{4}/.test(endPart)) {
-        const y = parseYear(endPart);
-        if (y) {
-          const mo = parseMonth(match[3] ?? '');
-          end = toDate(y, mo ?? 0);
+        const endPart = (match[3] ?? '').trim();
+        if (PRESENT_WORDS.test(endPart)) end = new Date();
+        else {
+          const emo = parseMonth(endPart);
+          const eyr = parseYear(match[4] ?? '');
+          if (eyr) end = toDate(eyr, emo ?? 0);
         }
-      } else if (match[4]) {
-        const y = parseYear(match[4]);
-        if (y) end = toDate(y);
       }
 
       const years = start && end
