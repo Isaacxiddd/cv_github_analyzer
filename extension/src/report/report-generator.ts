@@ -46,12 +46,22 @@ function metadataSection(result: AnalysisResult): string {
     </div>`;
 }
 
-export function generateReport(result: AnalysisResult): string {
+export type ReportSource = 'cv' | 'portfolio' | 'both';
+
+export function generateReport(result: AnalysisResult, source: ReportSource = 'cv'): string {
   const { scores, flags } = result;
   const sortedFlags = [...flags].sort((a, b) => {
     const order: FlagType[] = ['RED', 'YELLOW', 'GRAY', 'GREEN'];
     return order.indexOf(a.type) - order.indexOf(b.type);
   });
+
+  const title = source === 'cv' ? 'CV ↔ GitHub Analysis'
+    : source === 'portfolio' ? 'Portfolio ↔ GitHub Analysis'
+    : 'CV + Portfolio ↔ GitHub Analysis';
+
+  const srcLabel = source === 'cv' ? 'CV'
+    : source === 'portfolio' ? 'Portfolio'
+    : 'CV+Portfolio';
 
   const flagsHTML = sortedFlags.length > 0
     ? sortedFlags.map(flagRow).join('')
@@ -59,14 +69,14 @@ export function generateReport(result: AnalysisResult): string {
 
   return `
 <div class="report" style="font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:0 auto;padding:16px">
-  <h2 style="margin:0 0 4px;font-size:1.2em">CV ↔ GitHub Analysis</h2>
+  <h2 style="margin:0 0 4px;font-size:1.2em">${title}</h2>
   <p style="margin:0 0 16px;color:#64748b;font-size:0.9em">@${result.metadata.githubUsername}</p>
 
   ${metadataSection(result)}
 
   <div class="gauges" style="display:flex;gap:16px;justify-content:center;margin:16px 0;flex-wrap:wrap">
+    ${scoreGauge(srcLabel, scores.cv)}
     ${scoreGauge('GitHub', scores.github)}
-    ${scoreGauge('CV', scores.cv)}
     ${scoreGauge('Coherence', scores.coherence)}
     ${scoreGauge('Global', scores.global)}
   </div>

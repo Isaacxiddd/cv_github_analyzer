@@ -2,7 +2,7 @@ import { parsePDF, validatePDF } from '../parser/pdf-parser.js';
 import { extractCV } from '../parser/cv-extractor.js';
 import { fetchGitHubProfile, GitHubNotFoundError, GitHubRateLimitError } from '../analyzer/github-fetcher.js';
 import { runCrossCheck } from '../analyzer/cross-checker.js';
-import { generateReport } from '../report/report-generator.js';
+import { generateReport, type ReportSource } from '../report/report-generator.js';
 import { getStoredToken, setToken, removeToken } from '../auth/token-storage.js';
 import { getHistory, saveEntry, clearHistory } from '../background/history.js';
 import { scrapePortfolio, portfolioToExtractedCV } from '../analyzer/web-scraper.js';
@@ -241,7 +241,10 @@ analyzeBtn.addEventListener('click', async () => {
     setStatus('Cross-checking…');
     const result = runCrossCheck(cv, profile);
 
-    resultsEl.innerHTML = generateReport(result);
+    const source: ReportSource = selectedFile && scrapedPortfolio ? 'both'
+      : scrapedPortfolio ? 'portfolio'
+      : 'cv';
+    resultsEl.innerHTML = generateReport(result, source);
 
     const entry: HistoryEntry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -339,9 +342,18 @@ pillClear.addEventListener('click', () => {
 
 async function detectPortfolioFromTab(): Promise<void> {
   try {
+    // 1. Use content script detection (most accurate)
     const { detectedPortfolio } = await chrome.storage.session.get('detectedPortfolio');
     if (detectedPortfolio && Date.now() - detectedPortfolio.detectedAt < 60000) {
       portfolioInput.value = detectedPortfolio.url;
+      btnScrape.disabled = false;
+      return;
+    }
+
+    // 2. Fallback: use current tab URL if not on GitHub
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url && /^https?:\/\//.test(tab.url) && !tab.url.includes('github.com')) {
+      portfolioInput.value = tab.url;
       btnScrape.disabled = false;
     }
   } catch {}
