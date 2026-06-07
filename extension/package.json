@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "homepage": "https://github.com/Isaacxiddd/cv_github_analyzer",
   "scripts": {
     "dev": "tsx build.ts --watch",
     "build": "tsx build.ts",
