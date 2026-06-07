@@ -206,6 +206,23 @@ async function getCachedScrape(url: string): Promise<{ html: string; text: strin
   return null;
 }
 
+const GITHUB_HANDLE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
+
+function extractGitHubHandle(text: string): string | null {
+  // "GitHub: @user", "Github/User", "github: user", "gh: user"
+  const patterns = [
+    /(?:^|\s)github[:\s/]+@?([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})\b/i,
+    /(?:^|\s)gh[:\s/]+@?([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})\b/i,
+  ];
+
+  for (const pat of patterns) {
+    const match = pat.exec(text);
+    if (match && GITHUB_HANDLE.test(match[1])) return match[1];
+  }
+
+  return null;
+}
+
 function extractMetaDescription(html: string): string {
   const match = html.match(/<meta[^>]+name="description"[^>]+content="([^"]+)"/i);
   return match ? match[1].trim() : '';
@@ -250,7 +267,14 @@ export async function scrapePortfolio(url: string): Promise<ScrapedPortfolio> {
   const htmlSkills = extractTechsFromHTML(html);
   const allSkills = [...new Set([...textSkills, ...htmlSkills])];
 
-  const githubLink = extractGitHubLink(rawText) ?? extractLinks(html).github ?? null;
+  const links = extractLinks(html);
+  const githubLink = extractGitHubLink(rawText) ?? links.github ?? null;
+
+  // Broader GitHub username extraction from text (not just URLs)
+  if (!githubLink && !links.github) {
+    const userFromText = extractGitHubHandle(rawText);
+    if (userFromText) links.github = `https://github.com/${userFromText}`;
+  }
 
   return {
     name: extractName(html, rawText),
@@ -259,7 +283,7 @@ export async function scrapePortfolio(url: string): Promise<ScrapedPortfolio> {
     skills: allSkills,
     experience: extractExperience(rawText),
     education: extractEducation(rawText),
-    links: extractLinks(html),
+    links,
     seniority: detectSeniority(rawText),
     rawText,
   };
