@@ -4,7 +4,7 @@
 
 We take security seriously. If you discover a security vulnerability in CV ↔ GitHub Analyzer, please **do not** open a public issue.
 
-Instead, send a private report to the project maintainers via [GitHub Security Advisories](https://github.com/Isaacxiddd/cv_github_analyzer/security/advisories/new) or email [INSERT EMAIL].
+Instead, send a private report to the project maintainers via [GitHub Security Advisories](https://github.com/Isaacxiddd/cv_github_analyzer/security/advisories/new) or email [isaacjosegarciamarquez@gmail.com].
 
 Please include:
 
