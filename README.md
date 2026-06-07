@@ -7,7 +7,7 @@
 
 > Cross-check PDF CVs against GitHub profiles — detect skill gaps, date mismatches, and code quality signals.
 
-![Demo](https://via.placeholder.com/800x450?text=Demo+Screenshot+Coming+Soon)
+<img src="screenshots/demo.png" alt="Demo" style="max-width:100%;max-height:480px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
 
 ## Quick Start
 

@@ -7,6 +7,11 @@
     "dev": "pnpm --prefix extension dev",
     "test": "pnpm --prefix extension test",
     "typecheck": "pnpm --prefix extension typecheck",
-    "lint": "pnpm --prefix extension lint"
+    "lint": "pnpm --prefix extension lint",
+    "screenshot": "node scripts/screenshot.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "playwright": "^1.60.0"
   }
 }

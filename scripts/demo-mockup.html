@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV ↔ GitHub Analyzer Demo</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0 } body {
+  font-family: system-ui, -apple-system, sans-serif;
+  width: fit-content; min-height: 200px;
+  background: #f8fafc; color: #1e293b;
+  padding: 0; display: inline-block;
+}
+.header {
+  background: #0f172a; color: #f8fafc;
+  padding: 10px 14px; display: flex;
+  align-items: center; gap: 10px; width: 520px;
+}
+.header h1 { font-size: 0.95em; font-weight: 600; flex: 1 }
+.header .sub { font-size: 0.72em; color: #94a3b8 }
+.btn-header {
+  background: none; border: 1px solid #334155; color: #94a3b8;
+  padding: 4px 8px; border-radius: 5px; cursor: pointer;
+  font-size: 0.75em; transition: all 0.15s;
+}
+.body { padding: 12px; width: 520px; display: flex; flex-direction: column; gap: 10px }
+.drop-zone {
+  border: 2px dashed #cbd5e1; border-radius: 8px; padding: 16px;
+  text-align: center; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  border-color: #22c55e; background: #f0fdf4;
+}
+.drop-zone-icon { font-size: 1.5em; margin-bottom: 4px }
+.drop-zone-text { font-size: 0.8em; color: #64748b }
+.drop-zone-name { font-size: 0.8em; color: #16a34a; font-weight: 600; margin-top: 4px }
+label { font-size: 0.78em; font-weight: 600; color: #374151 }
+input[type="text"], input[type="url"] {
+  width: 100%; padding: 7px 10px; border: 1px solid #e2e8f0;
+  border-radius: 6px; font-size: 0.85em; background: #fff; margin-top: 3px;
+}
+.row { display: flex; gap: 8px; align-items: end }
+.row input { flex: 1 }
+button#analyze-btn {
+  padding: 7px 16px; background: #4f46e5; color: white; border: none;
+  border-radius: 6px; font-size: 0.82em; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+button#analyze-btn:disabled { background: #94a3b8; cursor: not-allowed }
+#status { font-size: 0.78em; color: #64748b; text-align: center; min-height: 16px }
+.token-section {
+  background: #f1f5f9; border-radius: 6px; padding: 7px 10px;
+}
+.token-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; user-select: none;
+}
+.token-header .label { font-size: 0.76em; font-weight: 600; color: #374151 }
+.token-header .status.ok { font-size: 0.72em; color: #16a34a }
+.token-header .arrow { font-size: 0.65em; color: #94a3b8; transition: transform 0.2s }
+.token-body.open { display: flex; flex-direction: column; margin-top: 6px; gap: 5px }
+.token-input-row { display: flex; gap: 5px }
+.token-input-row input {
+  flex: 1; padding: 5px 8px; border: 1px solid #e2e8f0;
+  border-radius: 5px; font-size: 0.74em; font-family: monospace; background: #fff;
+}
+.token-input-row .btn-icon {
+  padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 5px;
+  background: #fff; cursor: pointer; font-size: 0.76em; color: #64748b;
+}
+.token-hint { font-size: 0.68em; color: #94a3b8; line-height: 1.4 }
+.token-hint a { color: #6366f1 }
+.token-clear { background: none; border: none; font-size: 0.68em; color: #dc2626; cursor: pointer; padding: 0; text-align: left; cursor: pointer }
+.history-panel { border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 4px }
+.history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px }
+.history-header .title { font-size: 0.78em; font-weight: 600; color: #374151 }
+.history-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px }
+.history-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+  border-radius: 5px; background: #fff; border: 1px solid #f1f5f9;
+}
+.history-item .h-user { font-size: 0.78em; font-weight: 600; flex: 1 }
+.history-item .h-score { font-size: 0.72em; font-weight: 600; color: #16a34a }
+.history-item .h-date { font-size: 0.65em; color: #94a3b8 }
+#results { border-top: 1px solid #e2e8f0; padding-top: 10px }
+.footer { text-align: center; padding: 8px 0 2px; font-size: 0.68em; color: #94a3b8; border-top: 1px solid #e2e8f0; margin-top: 4px; width: 520px }
+.footer a { color: #6366f1; text-decoration: none }
+.divider { display:flex;align-items:center;gap:8px;font-size:0.7em;color:#94a3b8 }
+.divider::before,.divider::after { content:"";flex:1;height:1px;background:#e2e8f0 }
+.url-row { display:flex;gap:6px;margin-top:3px }
+.url-row input { flex:1;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.85em;background:#fff }
+#btn-scrape { padding:7px 12px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:0.78em;font-weight:600;cursor:pointer;white-space:nowrap }
+.portfolio-section { display:flex;flex-direction:column;gap:3px }
+.portfolio-pill { display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f1f5f9;border-radius:6px;font-size:0.78em;margin-top:4px }
+.badge { padding:2px 7px;border-radius:10px;font-weight:600;font-size:0.72em }
+.level-mid { background:#fff8e1;color:#f57f17 }
+.pill-skills { margin-left:auto;color:#64748b;font-size:0.75em }
+.pill-clear { background:none;border:none;cursor:pointer;color:#94a3b8;padding:0 2px;font-size:0.85em }
+
+/* Report styles */
+.report { font-family:system-ui,-apple-system,sans-serif; max-width:800px; margin:0 auto; padding:4px 0 }
+.gauge { text-align:center; min-width:80px }
+.gauge-circle { width:56px; height:56px; border-radius:50%; border:4px solid; display:flex; align-items:center; justify-content:center; margin:0 auto 4px }
+.gauge-circle .gauge-value { font-size:1.1em; font-weight:700 }
+.gauge-label { font-size:0.72em; color:#64748b; font-weight:500 }
+.gauges { display:flex; gap:12px; justify-content:center; margin:12px 0; flex-wrap:wrap }
+.meta { display:flex; gap:12px; flex-wrap:wrap; padding:8px 12px; background:#f8fafc; border-radius:6px; font-size:0.8em; color:#475569 }
+.flags-table { width:100%; border-collapse:collapse; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; margin-top:12px }
+.flags-table th { padding:8px 12px; text-align:left; font-size:0.8em; color:#475569; background:#f8fafc }
+.flags-table td { padding:8px 12px; font-size:0.82em }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>CV ↔ GitHub Analyzer</h1>
+    <span class="sub">Detect skill inconsistencies</span>
+  </div>
+  <button class="btn-header">—</button>
+</div>
+<div class="body">
+  <div class="drop-zone">
+    <div class="drop-zone-icon">📄</div>
+    <div class="drop-zone-text">Drop your CV (PDF) here or click to select</div>
+    <div class="drop-zone-name">fullstack-dev-cv.pdf</div>
+  </div>
+  <div class="row">
+    <div style="flex:1">
+      <label for="username-input">GitHub username</label>
+      <input type="text" id="username-input" value="octocat" placeholder="e.g. torvalds" autocomplete="off" readonly />
+    </div>
+    <button id="analyze-btn">Analyze</button>
+  </div>
+  <div class="divider"><span>or scrape a portfolio</span></div>
+  <div class="portfolio-section">
+    <label for="portfolio-url">Portfolio URL</label>
+    <div class="url-row">
+      <input type="url" placeholder="https://myportfolio.dev" autocomplete="off" />
+      <button id="btn-scrape" disabled>Scrape</button>
+    </div>
+  </div>
+  <div class="token-section">
+    <div class="token-header">
+      <span class="label">🔑 GitHub Token</span>
+      <span class="status ok">✓ Configured</span>
+      <span class="arrow">▶</span>
+    </div>
+  </div>
+  <div id="status">Done — 2 high, 1 low, 5 total finding(s)</div>
+  <div id="results">
+<div class="report">
+<h2 style="margin:0 0 4px;font-size:1.15em">CV ↔ GitHub Analysis</h2>
+<p style="margin:0 0 12px;color:#64748b;font-size:0.85em">@octocat</p>
+<div class="meta">
+  <span>📦 42 repos</span>
+  <span>🛠 15 skills detected</span>
+  <span>✅ 9 verified</span>
+  <span>🕐 Jun 7, 2026, 12:25 PM</span>
+</div>
+<div class="gauges">
+  <div class="gauge"><div class="gauge-circle" style="border-color:#16a34a"><span class="gauge-value" style="color:#16a34a">82</span></div><div class="gauge-label">CV</div></div>
+  <div class="gauge"><div class="gauge-circle" style="border-color:#d97706"><span class="gauge-value" style="color:#d97706">61</span></div><div class="gauge-label">GitHub</div></div>
+  <div class="gauge"><div class="gauge-circle" style="border-color:#d97706"><span class="gauge-value" style="color:#d97706">58</span></div><div class="gauge-label">Coherence</div></div>
+  <div class="gauge"><div class="gauge-circle" style="border-color:#d97706"><span class="gauge-value" style="color:#d97706">65</span></div><div class="gauge-label">Global</div></div>
+</div>
+<table class="flags-table">
+<thead><tr>
+  <th>Status</th><th>Skill</th><th>Finding</th><th>Evidence</th>
+</tr></thead>
+<tbody>
+<tr style="background:#fee2e2">
+  <td style="color:#991b1b;font-weight:600">🔴 High inconsistency</td>
+  <td style="font-weight:500">React</td>
+  <td>Listed in CV as primary skill but no commits in 18+ months</td>
+  <td style="color:#64748b">Last React commit: Dec 2024</td>
+</tr>
+<tr style="background:#fee2e2">
+  <td style="color:#991b1b;font-weight:600">🔴 High inconsistency</td>
+  <td style="font-weight:500">AWS</td>
+  <td>CV claims 3 years of AWS, no matching repos found</td>
+  <td style="color:#64748b">0 AWS-related repos</td>
+</tr>
+<tr style="background:#fef9c3">
+  <td style="color:#854d0e;font-weight:600">🟡 Low evidence</td>
+  <td style="font-weight:500">Python</td>
+  <td>Listed as intermediate, only 2 repos with Python</td>
+  <td style="color:#64748b">2 repos, avg 15 commits</td>
+</tr>
+<tr style="background:#dcfce7">
+  <td style="color:#166534;font-weight:600">🟢 Consistent</td>
+  <td style="font-weight:500">TypeScript</td>
+  <td>Matches primary GitHub language usage</td>
+  <td style="color:#64748b">65% of recent commits</td>
+</tr>
+<tr style="background:#dcfce7">
+  <td style="color:#166534;font-weight:600">🟢 Consistent</td>
+  <td style="font-weight:500">Docker</td>
+  <td>CV matches GitHub activity level</td>
+  <td style="color:#64748b">5 Dockerfile repos</td>
+</tr>
+</tbody>
+</table>
+</div>
+  </div>
+  <div class="history-panel">
+    <div class="history-header">
+      <span class="title">📋 Analysis History</span>
+    </div>
+    <div class="history-list">
+      <div class="history-item">
+        <span class="h-user">@octocat</span>
+        <span class="h-score">65%</span>
+        <span class="h-date">6/7/2026, 12:25 PM</span>
+      </div>
+      <div class="history-item">
+        <span class="h-user">@torvalds</span>
+        <span class="h-score">91%</span>
+        <span class="h-date">6/7/2026, 11:30 AM</span>
+      </div>
+      <div class="history-item">
+        <span class="h-user">@addyosmani</span>
+        <span class="h-score">78%</span>
+        <span class="h-date">6/7/2026, 10:15 AM</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer">Made by <a href="https://github.com/Isaacxiddd" target="_blank">Isaac Garcia</a></div>
+</body>
+</html>
