@@ -1,0 +1,40 @@
+{
+  "user": {
+    "login": "janesmith",
+    "name": "Jane Smith",
+    "bio": null,
+    "public_repos": 6,
+    "followers": 2,
+    "created_at": "2023-09-01T00:00:00Z"
+  },
+  "repos": [
+    {
+      "name": "hello-world",
+      "language": "JavaScript",
+      "languages": { "JavaScript": 3000 },
+      "hasTests": false,
+      "hasCI": false,
+      "hasReadme": false,
+      "readmeWordCount": 0,
+      "firstCommitDate": "2023-09-05T00:00:00Z",
+      "lastCommitDate": "2023-10-01T00:00:00Z",
+      "commitCount": 5,
+      "stars": 0,
+      "forks": 0
+    },
+    {
+      "name": "todo-app",
+      "language": "JavaScript",
+      "languages": { "JavaScript": 4000, "HTML": 1000, "CSS": 500 },
+      "hasTests": false,
+      "hasCI": false,
+      "hasReadme": false,
+      "readmeWordCount": 0,
+      "firstCommitDate": "2023-09-10T00:00:00Z",
+      "lastCommitDate": "2023-11-15T00:00:00Z",
+      "commitCount": 12,
+      "stars": 0,
+      "forks": 0
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM"],
+    "types": ["chrome"],
+    "paths": {
+      "../src/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*", "build.ts"]
+}

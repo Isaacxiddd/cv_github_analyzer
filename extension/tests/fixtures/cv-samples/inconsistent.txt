@@ -1,0 +1,20 @@
+Jane Smith
+Full Stack Developer
+github.com/janesmith
+
+SKILLS
+Languages: Rust, Haskell, Scala, Kotlin, Elixir
+Backend: Spring Boot, Rails, Phoenix
+Databases: Cassandra, Neo4j, InfluxDB
+Cloud: GCP, Azure
+DevOps: Kubernetes, Terraform, ArgoCD
+
+EXPERIENCE
+Senior Backend Engineer – BigCorp
+January 2015 – Present
+- 10 years of Rust experience
+- 8 years of Haskell in production
+- Led Kubernetes cluster migrations
+
+EDUCATION
+B.Sc. Computer Science, 2014

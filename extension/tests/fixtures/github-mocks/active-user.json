@@ -1,0 +1,54 @@
+{
+  "user": {
+    "login": "johndoe",
+    "name": "John Doe",
+    "bio": "Senior engineer",
+    "public_repos": 42,
+    "followers": 120,
+    "created_at": "2015-03-12T00:00:00Z"
+  },
+  "repos": [
+    {
+      "name": "react-dashboard",
+      "language": "TypeScript",
+      "languages": { "TypeScript": 45000, "CSS": 8000 },
+      "hasTests": true,
+      "hasCI": true,
+      "hasReadme": true,
+      "readmeWordCount": 320,
+      "firstCommitDate": "2020-01-10T00:00:00Z",
+      "lastCommitDate": "2024-11-01T00:00:00Z",
+      "commitCount": 180,
+      "stars": 34,
+      "forks": 8
+    },
+    {
+      "name": "go-microservice",
+      "language": "Go",
+      "languages": { "Go": 32000 },
+      "hasTests": true,
+      "hasCI": true,
+      "hasReadme": true,
+      "readmeWordCount": 210,
+      "firstCommitDate": "2019-06-20T00:00:00Z",
+      "lastCommitDate": "2024-10-15T00:00:00Z",
+      "commitCount": 95,
+      "stars": 12,
+      "forks": 3
+    },
+    {
+      "name": "python-scripts",
+      "language": "Python",
+      "languages": { "Python": 12000 },
+      "hasTests": false,
+      "hasCI": false,
+      "hasReadme": true,
+      "readmeWordCount": 80,
+      "firstCommitDate": "2021-03-05T00:00:00Z",
+      "lastCommitDate": "2024-08-20T00:00:00Z",
+      "commitCount": 40,
+      "stars": 5,
+      "forks": 1
+    }
+  ]
+}

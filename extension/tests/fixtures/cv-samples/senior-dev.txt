@@ -1,0 +1,27 @@
+John Doe
+Senior Software Engineer
+github.com/johndoe | johndoe@email.com
+
+SKILLS
+Languages: JavaScript, TypeScript, Python, Go
+Frontend: React, Next.js, Tailwind, Vue
+Backend: Node.js, Express, FastAPI, Django
+Databases: PostgreSQL, MongoDB, Redis
+Cloud: AWS, Docker, Kubernetes
+Testing: Jest, Vitest, Playwright
+
+EXPERIENCE
+
+Senior Engineer – Acme Corp
+January 2020 – Present
+- Built microservices in Node.js and Go
+- 5 years of experience with React
+- Led migration to TypeScript
+
+Full Stack Developer – StartupXYZ
+March 2018 – December 2019
+- Django backend, React frontend
+- PostgreSQL and Redis
+
+EDUCATION
+B.Sc. Computer Science – MIT, 2018

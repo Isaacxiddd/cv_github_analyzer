@@ -1,0 +1,14 @@
+Alex Rivera
+Junior Developer
+github.com/alexrivera
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, PostgreSQL, Git
+
+EXPERIENCE
+Junior Developer – WebAgency
+June 2023 – Present
+First job out of bootcamp
+
+EDUCATION
+Full-Stack Bootcamp – 2023

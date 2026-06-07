@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "CV ↔ GitHub Analyzer",
+  "version": "0.1.0",
+  "description": "Cross-check your CV skills against your GitHub profile to detect inconsistencies.",
+  "permissions": ["storage", "activeTab", "identity"],
+  "host_permissions": ["https://api.github.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CV GitHub Analyzer",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pdf.worker.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
