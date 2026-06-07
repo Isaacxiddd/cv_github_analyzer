@@ -1,5 +1,7 @@
 import * as esbuild from 'esbuild';
-import { copyFileSync, mkdirSync } from 'fs';
+import { cpSync, copyFileSync, mkdirSync, readdirSync, rmSync } from 'fs';
+import { join } from 'path';
+import sharp from 'sharp';
 
 const watch = process.argv.includes('--watch');
 
@@ -21,8 +23,22 @@ const buildOptions: esbuild.BuildOptions = {
   define: {},
 };
 
-copyFileSync('public/manifest.json', 'dist/manifest.json');
+cpSync('public', 'dist', { recursive: true });
 copyFileSync('src/popup/popup.html',  'dist/popup.html');
+
+// Convert SVG icons to PNG (Chrome requires PNG for extension icons)
+const iconSizes = [16, 32, 48, 128, 512];
+for (const size of iconSizes) {
+  const svg = join('public', 'icons', `logo_${size}.svg`);
+  const png = join('dist', 'icons', `logo_${size}.png`);
+  await sharp(svg).resize(size, size).png().toFile(png);
+}
+
+// Remove SVG copies from dist (manifest uses PNGs)
+const distIcons = join('dist', 'icons');
+for (const file of readdirSync(distIcons).filter(f => f.endsWith('.svg'))) {
+  rmSync(join(distIcons, file));
+}
 copyFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'dist/pdf.worker.min.js');
 copyFileSync('node_modules/pdfjs-dist/build/pdf.mjs', 'dist/pdf.mjs');
 

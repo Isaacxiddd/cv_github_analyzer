@@ -1,5 +1,5 @@
 import { extractSkills, extractDates, extractGitHubLink } from '../parser/cv-extractor.js';
-import { TECH_LIST } from '../parser/tech-list.js';
+import { TECH_LIST } from '../data/technologies.js';
 import type { ExtractedCV, ScrapedPortfolio } from '../types/index.js';
 
 // ─── Seniority detection ────────────────────────────────────────────────────

@@ -90,6 +90,7 @@ export type RuleId =
   | 'NO_TESTS'
   | 'INACTIVE'
   | 'NO_CI'
+  | 'EMPTY_REPOS'
   | 'VERIFIED';
 
 export interface Flag {

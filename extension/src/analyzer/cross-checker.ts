@@ -1,188 +1,65 @@
-import type { ExtractedCV, GitHubProfile, AnalysisResult, Flag, Scores, RuleId } from '../types/index.js';
-import { TECH_LIST } from '../parser/tech-list.js';
+import type { ExtractedCV, GitHubProfile, AnalysisResult, Flag, Scores } from '../types/index.js';
+import { TECH_LIST } from '../data/technologies.js';
+import { ruleNoRepos } from './rules/no-repos.js';
+import { ruleRecentOnly } from './rules/recent-only.js';
+import { ruleYearsMismatch } from './rules/years-mismatch.js';
+import { ruleInactive } from './rules/inactive.js';
+import { ruleNoReadme } from './rules/no-readme.js';
+import { ruleNoTests } from './rules/no-tests.js';
+import { ruleNoCI } from './rules/no-ci.js';
+import { ruleEmptyRepos } from './rules/empty-repos.js';
+import { ruleVerified } from './rules/verified.js';
 
 const LANGUAGE_TECHS = new Set(
   TECH_LIST.filter(t => t.category === 'language' && t.githubLanguage).map(t => t.canonical)
 );
 
-function githubLangFor(skill: string): string | undefined {
-  return TECH_LIST.find(t => t.canonical === skill)?.githubLanguage;
-}
-
-// Returns true if the skill can be considered verified based on related skills in the profile.
-// TypeScript in GitHub implies JavaScript. TS/JS repos imply HTML and CSS.
-function isImplied(skill: string, profile: GitHubProfile, cv: ExtractedCV): boolean {
-  const hasLangInGitHub = (lang: string) =>
-    Object.keys(profile.languageStats).some(l => l.toLowerCase() === lang.toLowerCase());
-
-  if (skill === 'JavaScript') {
-    return hasLangInGitHub('TypeScript');
-  }
-  if (skill === 'HTML' || skill === 'CSS') {
-    return hasLangInGitHub('TypeScript') || hasLangInGitHub('JavaScript');
-  }
-  return false;
-}
-
-// ─── Individual Rules ────────────────────────────────────────────────────────
-
-function ruleNoRepos(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
-  const lang = githubLangFor(skill);
-  if (!lang) return null;
-  const hasLang = Object.keys(profile.languageStats).some(
-    l => l.toLowerCase() === lang.toLowerCase()
-  );
-  if (!hasLang && !isImplied(skill, profile, cv)) {
-    return {
-      type: 'RED',
-      skill,
-      ruleId: 'NO_REPOS',
-      message: `No repos found using ${skill}`,
-      evidence: `0 repos with ${lang} in GitHub language stats`,
-    };
-  }
-  return null;
-}
-
-function ruleRecentOnly(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
-  const lang = githubLangFor(skill);
-  if (!lang) return null;
-  if (isImplied(skill, profile, cv)) return null;
-  const langRepos = profile.repos.filter(r => r.primaryLanguage.toLowerCase() === lang.toLowerCase());
-  if (langRepos.length === 0) return null;
-
-  const oldest = langRepos.reduce((min, r) => {
-    if (!r.firstCommitDate) return min;
-    return !min || r.firstCommitDate < min ? r.firstCommitDate : min;
-  }, null as Date | null);
-
-  if (!oldest) return null;
-  const monthsOld = (Date.now() - oldest.getTime()) / (1000 * 60 * 60 * 24 * 30);
-
-  if (monthsOld < 12) {
-    return {
-      type: 'YELLOW',
-      skill,
-      ruleId: 'RECENT_ONLY',
-      message: `${skill} activity is recent (< 1 year)`,
-      evidence: `Oldest ${lang} repo created ${Math.round(monthsOld)} months ago`,
-    };
-  }
-  return null;
-}
-
-function ruleYearsMismatch(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
-  if (isImplied(skill, profile, cv)) return null;
-  const claimed = cv.dates.find(d => d.skill && d.skill.toLowerCase().includes(skill.toLowerCase()));
-  if (!claimed || claimed.yearsOfExperience < 1) return null;
-
-  const lang = githubLangFor(skill);
-  if (!lang) return null;
-  const langRepos = profile.repos.filter(r => r.primaryLanguage.toLowerCase() === lang.toLowerCase());
-  if (langRepos.length === 0) return null;
-
-  const oldest = langRepos.reduce((min, r) => {
-    if (!r.firstCommitDate) return min;
-    return !min || r.firstCommitDate < min ? r.firstCommitDate : min;
-  }, null as Date | null);
-
-  if (!oldest) return null;
-  const githubYears = (Date.now() - oldest.getTime()) / (1000 * 60 * 60 * 24 * 365);
-  const diff = claimed.yearsOfExperience - githubYears;
-
-  if (diff > 1.5) {
-    return {
-      type: 'RED',
-      skill,
-      ruleId: 'YEARS_MISMATCH',
-      message: `Claimed ${claimed.yearsOfExperience}y of ${skill} but GitHub shows ~${githubYears.toFixed(1)}y`,
-      evidence: `Oldest ${lang} repo: ${oldest.toISOString().slice(0, 7)}`,
-    };
-  }
-  return null;
-}
-
-function ruleInactive(profile: GitHubProfile): Flag | null {
-  const recentRepos = profile.repos.filter(r => {
-    if (!r.lastCommitDate) return false;
-    const daysAgo = (Date.now() - r.lastCommitDate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysAgo <= 180;
-  });
-  if (recentRepos.length === 0 && profile.repos.length > 0) {
-    return {
-      type: 'YELLOW',
-      skill: 'General Activity',
-      ruleId: 'INACTIVE',
-      message: 'No commits detected in the last 6 months',
-      evidence: `Latest push: ${profile.repos[0]?.lastCommitDate?.toISOString().slice(0, 10) ?? 'unknown'}`,
-    };
-  }
-  return null;
-}
-
-function ruleNoReadme(profile: GitHubProfile): Flag | null {
-  if (profile.repos.length === 0) return null;
-  const noReadme = profile.repos.filter(r => !r.hasReadme).length;
-  const ratio = noReadme / profile.repos.length;
-  if (ratio > 0.5) {
-    return {
-      type: 'YELLOW',
-      skill: 'Documentation',
-      ruleId: 'NO_README',
-      message: `${Math.round(ratio * 100)}% of repos have no README`,
-      evidence: `${noReadme} of ${profile.repos.length} repos lack documentation`,
-    };
-  }
-  return null;
-}
-
-function ruleNoTests(profile: GitHubProfile): Flag | null {
-  if (profile.repos.length === 0) return null;
-  const noTests = profile.repos.filter(r => !r.hasTests).length;
-  const ratio = noTests / profile.repos.length;
-  if (ratio > 0.7) {
-    return {
-      type: 'YELLOW',
-      skill: 'Testing',
-      ruleId: 'NO_TESTS',
-      message: `${Math.round(ratio * 100)}% of repos have no test directory`,
-      evidence: `${noTests} of ${profile.repos.length} repos without /test or /spec`,
-    };
-  }
-  return null;
-}
-
-function ruleNoCI(profile: GitHubProfile): Flag | null {
-  if (profile.repos.length === 0) return null;
-  const noCI = profile.repos.filter(r => !r.hasCI).length;
-  const ratio = noCI / profile.repos.length;
-  if (ratio > 0.9) {
-    return {
-      type: 'GRAY',
-      skill: 'CI/CD',
-      ruleId: 'NO_CI',
-      message: 'No CI/CD configuration detected in repos',
-      evidence: `${noCI} of ${profile.repos.length} repos without GitHub Actions`,
-    };
-  }
-  return null;
-}
-
-// ─── Scoring ─────────────────────────────────────────────────────────────────
-
 function computeScores(flags: Flag[], cv: ExtractedCV, profile: GitHubProfile): Scores {
   const redFlags = flags.filter(f => f.type === 'RED').length;
   const yellowFlags = flags.filter(f => f.type === 'YELLOW').length;
-  const skillFlags = flags.filter(f => f.ruleId === 'NO_REPOS' || f.ruleId === 'YEARS_MISMATCH').length;
 
   const totalSkills = cv.skills.filter(s => LANGUAGE_TECHS.has(s)).length || 1;
+
+  // ── Coherence ─────────────────────────────────────────────────────────────
   const coherence = Math.max(0, 100 - (redFlags * 20 + yellowFlags * 8));
+
+  // ── GitHub score ──────────────────────────────────────────────────────────
   const github = Math.min(100, Math.max(0,
     40 + (profile.commitActivity.last365Days * 2) +
     (profile.repos.filter(r => r.hasTests).length * 3) +
     (profile.repos.filter(r => r.hasCI).length * 2)
   ));
-  const cv_score = Math.max(0, 100 - (skillFlags / totalSkills) * 50);
+
+  // ── CV score ──────────────────────────────────────────────────────────────
+  // Penalised per-skill only when there is zero GitHub evidence for a claimed
+  // language.  Quality issues (empty repos, missing tests/CI/README) add small
+  // secondary penalties because they reduce the credibility of the evidence.
+  const skillPenalties = flags.filter(f =>
+    f.ruleId === 'NO_REPOS' || f.ruleId === 'YEARS_MISMATCH'
+  ).length;
+
+  const qualityPenalties = flags.filter(f =>
+    f.ruleId === 'NO_README' || f.ruleId === 'NO_TESTS' || f.ruleId === 'NO_CI'
+  ).length;
+
+  // Detect skills whose only GitHub repos are empty (0 commits) – they exist
+  // as repos but prove nothing about the candidate's actual proficiency.
+  const langSkills = cv.skills.filter(s => LANGUAGE_TECHS.has(s));
+  const emptyReposPerSkill = langSkills.filter(skill => {
+    const matching = profile.repos.filter(r =>
+      r.primaryLanguage === skill ||
+      (r.languages[skill] ?? 0) > 0
+    );
+    return matching.length > 0 && matching.every(r => r.commitCount === 0);
+  }).length;
+
+  const cv_score = Math.max(0, 100
+    - (skillPenalties / totalSkills) * 50
+    - (emptyReposPerSkill / totalSkills) * 25
+    - qualityPenalties * 5
+  );
+
+  // ── Global ────────────────────────────────────────────────────────────────
   const global = Math.round((coherence * 0.5 + github * 0.3 + cv_score * 0.2));
 
   return {
@@ -192,8 +69,6 @@ function computeScores(flags: Flag[], cv: ExtractedCV, profile: GitHubProfile): 
     global,
   };
 }
-
-// ─── Main Checker ─────────────────────────────────────────────────────────────
 
 export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): AnalysisResult {
   const flags: Flag[] = [];
@@ -206,6 +81,8 @@ export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): Analysis
     if (f2) flags.push(f2);
     const f3 = ruleYearsMismatch(skill, profile, cv);
     if (f3) flags.push(f3);
+    const f4 = ruleEmptyRepos(skill, profile);
+    if (f4) flags.push(f4);
   }
 
   const inactiveFlag = ruleInactive(profile);
@@ -220,13 +97,7 @@ export function runCrossCheck(cv: ExtractedCV, profile: GitHubProfile): Analysis
   const flaggedSkills = new Set(flags.map(f => f.skill));
   for (const skill of langSkills) {
     if (!flaggedSkills.has(skill)) {
-      flags.push({
-        type: 'GREEN',
-        skill,
-        ruleId: 'VERIFIED',
-        message: `${skill} detected in GitHub repos`,
-        evidence: `${skill} is present in CV and GitHub profile`,
-      });
+      flags.push(ruleVerified(skill));
     }
   }
 
