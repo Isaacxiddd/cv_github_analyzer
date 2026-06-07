@@ -1,22 +1,5 @@
 import type { Flag, ExtractedCV, GitHubProfile } from '../../types/index.js';
-import { TECH_LIST } from '../../data/technologies.js';
-
-function githubLangFor(skill: string): string | undefined {
-  return TECH_LIST.find(t => t.canonical === skill)?.githubLanguage;
-}
-
-function isImplied(skill: string, profile: GitHubProfile, cv: ExtractedCV): boolean {
-  const hasLangInGitHub = (lang: string) =>
-    Object.keys(profile.languageStats).some(l => l.toLowerCase() === lang.toLowerCase());
-
-  if (skill === 'JavaScript') {
-    return hasLangInGitHub('TypeScript');
-  }
-  if (skill === 'HTML' || skill === 'CSS') {
-    return hasLangInGitHub('TypeScript') || hasLangInGitHub('JavaScript');
-  }
-  return false;
-}
+import { githubLangFor, isImplied } from '../language-utils.js';
 
 export function ruleYearsMismatch(skill: string, profile: GitHubProfile, cv: ExtractedCV): Flag | null {
   if (isImplied(skill, profile, cv)) return null;
@@ -42,8 +25,8 @@ export function ruleYearsMismatch(skill: string, profile: GitHubProfile, cv: Ext
       type: 'RED',
       skill,
       ruleId: 'YEARS_MISMATCH',
-      message: `Claimed ${claimed.yearsOfExperience}y of ${skill} but GitHub shows ~${githubYears.toFixed(1)}y`,
-      evidence: `Oldest ${lang} repo: ${oldest.toISOString().slice(0, 7)}`,
+      message: `Claimed ${claimed.yearsOfExperience}y of ${skill} but public GitHub activity shows ~${githubYears.toFixed(1)}y`,
+      evidence: `Oldest public ${lang} repo: ${oldest.toISOString().slice(0, 7)} — claim exceeds observable history by ${diff.toFixed(1)}y`,
     };
   }
   return null;

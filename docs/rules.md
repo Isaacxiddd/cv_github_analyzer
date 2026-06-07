@@ -1,10 +1,16 @@
 # Cross-Check Rules
 
-Each rule is a pure function that receives `(cv, profile)` and returns either a `Flag` or `null`.
+Each rule is a pure function that returns either a `Flag` or `null`.
+
+## Principles
+
+1. **Evidence-based language** — flags report what was *observed*, not what was *concluded*
+2. **Relevant repos only** — quality rules (tests, README, CI) only consider repos with size > 0 KB, a README, and recent activity
+3. **No false precision** — all messages are careful to distinguish "no evidence found" from "evidence of absence"
 
 ## Rule Catalog
 
-### NO_REPOS — Skill present in CV but absent from GitHub
+### NO_REPOS — Skill claimed in CV but no public GitHub repos found
 
 | Field | Value |
 |-------|-------|
@@ -12,71 +18,81 @@ Each rule is a pure function that receives `(cv, profile)` and returns either a 
 | **Type** | `RED` |
 | **Trigger** | A language skill (e.g. "Python") listed in CV has zero matching repos on GitHub |
 | **Implied skills** | TypeScript → JavaScript, TS/JS → HTML/CSS |
-| **Why it matters** | Most common CV inflation pattern |
+| **Message** | *"No public {skill} repos found"* |
+| **Why it matters** | Public repo evidence is the most objective signal available |
 
-### YEARS_MISMATCH — Claimed experience years vs GitHub evidence
+### YEARS_MISMATCH — Claimed experience vs public history
 
 | Field | Value |
 |-------|-------|
 | **Severity** | 🔴 High |
 | **Type** | `RED` |
-| **Trigger** | CV claims N years of skill X but oldest GitHub repo in X shows < N-1.5 years |
+| **Trigger** | CV claims N years of skill X but oldest public GitHub repo in X shows < N-1.5 years |
 | **Threshold** | Flagged when `CV_years - GitHub_years > 1.5` |
-| **Example** | "5 years React" → first React commit was 2 years ago → flagged |
+| **Message** | *"Claimed {N}y of {skill} but public GitHub activity shows ~{N}y"* |
+| **Caveat** | Public GitHub history may not reflect private/professional experience |
 
-### RECENT_ONLY — Skill activity is recent
+### RECENT_ONLY — Public skill activity is recent
 
 | Field | Value |
 |-------|-------|
 | **Severity** | 🟡 Medium |
 | **Type** | `YELLOW` |
-| **Trigger** | All repos using skill X are less than 12 months old |
-| **Why it matters** | May indicate recent learning, not deep experience |
+| **Trigger** | All public repos using skill X are less than 12 months old |
+| **Message** | *"Public {skill} activity is recent (< 1 year)"* |
 
-### INACTIVE — No recent commit activity
+### INACTIVE — No recent public activity
 
 | Field | Value |
 |-------|-------|
 | **Severity** | 🟡 Medium |
 | **Type** | `YELLOW` |
 | **Trigger** | Zero repos with commits in the last 180 days |
-| **Why it matters** | GitHub should be active if CV claims current development work |
+| **Message** | *"No recent public activity — last push was {date}"* |
+| **Why it matters** | No judgment made about private activity; only public commit data is available |
 
-### NO_TESTS — Lack of testing culture
-
-| Field | Value |
-|-------|-------|
-| **Severity** | 🟡 Medium |
-| **Type** | `YELLOW` |
-| **Trigger** | >70% of repos have no `test/`, `tests/`, `spec/`, or `e2e/` directory |
-| **Why it matters** | Testing is a quality signal for professional developers |
-
-### NO_README — Poor documentation
+### NO_TESTS — No public testing evidence found
 
 | Field | Value |
 |-------|-------|
 | **Severity** | 🟡 Medium |
 | **Type** | `YELLOW` |
-| **Trigger** | >50% of repos lack a README file |
-| **Why it matters** | README indicates project maturity and communication skills |
+| **Trigger** | >70% of relevant* repos have no test files or directories |
+| **Message** | *"No public testing evidence in {N} of {M} active repos"* |
+| **Detection** | Checks for `test/`, `tests/`, `spec/`, `__tests__/`, `e2e/` directories AND `*.test.*`, `*.spec.*` files |
+| **\*Relevant** | Repos with size > 0 KB and activity in the last 6 months |
+| **Caveat** | Tests may exist in private repos, separate test suites, or non-obvious structures |
 
-### NO_CI — No CI/CD configuration
+### NO_README — Public documentation gap
+
+| Field | Value |
+|-------|-------|
+| **Severity** | 🟡 Medium |
+| **Type** | `YELLOW` |
+| **Trigger** | >50% of relevant* repos lack a README file |
+| **Message** | *"{N} of {M} active repos lack documentation"* |
+| **\*Relevant** | Repos with size > 0 KB and activity in the last 6 months |
+
+### NO_CI — No public CI/CD evidence
 
 | Field | Value |
 |-------|-------|
 | **Severity** | ⚪ Low |
 | **Type** | `GRAY` |
-| **Trigger** | >90% of repos have no GitHub Actions or CI config |
-| **Why it matters** | CI/CD is a professional engineering standard |
+| **Trigger** | >90% of relevant* repos have no GitHub Actions or CI config |
+| **Message** | *"No CI/CD evidence in {N} of {M} active repos"* |
+| **\*Relevant** | Repos with size > 0 KB and activity in the last 6 months |
+| **Caveat** | CI may be configured externally (Jenkins, GitLab CI, etc.) |
 
-### EMPTY_REPOS — Repo exists but has no commits
+### EMPTY_REPOS — Repos exist but are empty stubs
 
 | Field | Value |
 |-------|-------|
 | **Severity** | 🟡 Medium |
 | **Type** | `YELLOW` |
-| **Trigger** | All repos matching a skill have zero commits (stub/empty repos) |
-| **Why it matters** | An empty repo proves nothing about proficiency — it only shows the language was selected |
+| **Trigger** | All repos matching a skill have 0 KB size (no file content) |
+| **Message** | *"{skill} repos exist but appear to be empty stubs"* |
+| **Why it matters** | An empty repo only shows the language was selected, not that it was used |
 
 ### VERIFIED — Skill confirmed
 
@@ -85,4 +101,4 @@ Each rule is a pure function that receives `(cv, profile)` and returns either a 
 | **Severity** | 🟢 Info |
 | **Type** | `GREEN` |
 | **Trigger** | A skill listed in CV has matching GitHub repos with no RED flags |
-| **Meaning** | Skill is consistent between CV and GitHub |
+| **Evidence** | Lists specific repo names that matched |

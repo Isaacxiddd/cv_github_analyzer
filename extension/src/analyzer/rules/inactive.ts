@@ -6,13 +6,14 @@ export function ruleInactive(profile: GitHubProfile): Flag | null {
     const daysAgo = (Date.now() - r.lastCommitDate.getTime()) / (1000 * 60 * 60 * 24);
     return daysAgo <= 180;
   });
-  if (recentRepos.length === 0 && profile.repos.length > 0) {
+  const latest = profile.repos[0]?.lastCommitDate?.toISOString().slice(0, 10);
+  if (recentRepos.length === 0 && profile.repos.length > 0 && latest) {
     return {
       type: 'YELLOW',
       skill: 'General Activity',
       ruleId: 'INACTIVE',
-      message: 'No commits detected in the last 6 months',
-      evidence: `Latest push: ${profile.repos[0]?.lastCommitDate?.toISOString().slice(0, 10) ?? 'unknown'}`,
+      message: `No recent public activity — last push was ${latest}`,
+      evidence: `No commits found in any repo within the last 6 months`,
     };
   }
   return null;

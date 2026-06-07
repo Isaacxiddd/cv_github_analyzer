@@ -20,8 +20,9 @@ Chrome extension that cross-checks a PDF CV against a GitHub profile to detect s
 extension/        ← Chrome extension (all v0.x work happens here)
   src/
     types/        ← index.ts: ALL shared interfaces live here
-    parser/       ← pdf-parser.ts, cv-extractor.ts, tech-list.ts
-    analyzer/     ← github-fetcher.ts, cross-checker.ts
+    data/         ← technologies.ts (tech-list moved here)
+    parser/       ← pdf-parser.ts, cv-extractor.ts, skills/dates/links extractors
+    analyzer/     ← github-fetcher.ts, cross-checker.ts, rules/*.ts, language-utils.ts, repo-utils.ts
     report/       ← report-generator.ts
     popup/        ← popup.html, popup.ts
     background/   ← background.ts (service worker, thin orchestrator)
@@ -58,9 +59,11 @@ npm run typecheck  # tsc --noEmit
 ## Adding a new cross-checker rule
 
 1. Add `RuleId` to `src/types/index.ts`
-2. Write a pure function `ruleXxx(cv, profile): Flag | null` in `cross-checker.ts`
-3. Call it inside `runCrossCheck()` and push its result to `flags`
-4. Add a test in `tests/cross-checker.test.ts` with a fixture that triggers it
+2. Write a pure function `ruleXxx(cv, profile): Flag | null` in `src/analyzer/rules/rule-xxx.ts`
+3. Import and call it inside `src/analyzer/cross-checker.ts`'s `runCrossCheck()`
+4. Use **evidence-based language** — report what was observed, not conclusions
+5. For quality rules (tests/README/CI), use `isRelevantRepo()` from `repo-utils.ts` to filter repos
+6. Add a test in `tests/cross-checker.test.ts` with a fixture that triggers it
 
 ## Roadmap
 

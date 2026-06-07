@@ -44,7 +44,11 @@ async function detectRepoFeatures(
 
   if (contents.status === 'fulfilled') {
     const names = contents.value.map(f => f.name.toLowerCase());
-    hasTests = names.some(n => ['test', 'tests', 'spec', '__tests__', 'e2e'].includes(n));
+    hasTests = names.some(n =>
+      ['test', 'tests', 'spec', '__tests__', 'e2e'].includes(n) ||
+      /\.(test|spec|e2e)\./.test(n) ||
+      n.endsWith('_test.go') || n.endsWith('_test.py')
+    );
     hasCI = names.includes('.github');
     const readmeName = names.find(n => n.startsWith('readme'));
     if (readmeName) {

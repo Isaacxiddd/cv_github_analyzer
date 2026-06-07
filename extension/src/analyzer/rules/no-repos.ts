@@ -12,8 +12,8 @@ export function ruleNoRepos(skill: string, profile: GitHubProfile, cv: Extracted
       type: 'RED',
       skill,
       ruleId: 'NO_REPOS',
-      message: `No repos found using ${skill}`,
-      evidence: `0 repos with ${lang} in GitHub language stats`,
+      message: `No public ${skill} repos found`,
+      evidence: `0 GitHub repos with ${lang} in language stats — skill claimed in CV but no observable GitHub activity in this language`,
     };
   }
   return null;

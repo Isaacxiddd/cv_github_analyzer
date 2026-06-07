@@ -21,7 +21,6 @@ export function ruleEmptyRepos(skill: string, profile: GitHubProfile, cv: Extrac
   const impliedLang = githubLangFor(skill);
   if (!impliedLang) return null;
 
-  // If NO_REPOS would fire, empty-repos doesn't apply (repos don't exist at all)
   const hasLang = Object.keys(profile.languageStats).some(
     l => l.toLowerCase() === impliedLang.toLowerCase()
   );
@@ -30,7 +29,6 @@ export function ruleEmptyRepos(skill: string, profile: GitHubProfile, cv: Extrac
   const matching = profile.repos.filter(r => matchesSkill(r, skill));
   if (matching.length === 0) return null;
 
-  // A repo is "empty" if its total size is 0 KB (no files committed)
   const allEmpty = matching.every(r => r.sizeKb === 0);
   if (!allEmpty) return null;
 
@@ -38,7 +36,7 @@ export function ruleEmptyRepos(skill: string, profile: GitHubProfile, cv: Extrac
     type: 'YELLOW',
     skill,
     ruleId: 'EMPTY_REPOS',
-    message: `${skill} repos exist but appear empty (0 KB)`,
-    evidence: `${matching.length} repo(s) with ${impliedLang} have no file content`,
+    message: `${skill} repos exist but appear to be empty stubs`,
+    evidence: `${matching.length} repo(s) with ${impliedLang} have no file content (0 KB) — likely placeholder repositories`,
   };
 }
