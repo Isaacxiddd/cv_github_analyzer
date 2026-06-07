@@ -9,7 +9,8 @@ const buildOptions: esbuild.BuildOptions = {
   entryPoints: [
     { in: 'src/popup/popup.ts',         out: 'dist/popup' },
     { in: 'src/background/background.ts', out: 'dist/background' },
-    { in: 'src/content/content.ts',     out: 'dist/content' },
+    { in: 'src/content/content.ts',         out: 'dist/content' },
+    { in: 'src/content/portfolio-detector.ts', out: 'dist/portfolio-detector' },
   ],
   bundle: true,
   target: 'chrome120',
@@ -23,6 +24,7 @@ const buildOptions: esbuild.BuildOptions = {
 copyFileSync('public/manifest.json', 'dist/manifest.json');
 copyFileSync('src/popup/popup.html',  'dist/popup.html');
 copyFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'dist/pdf.worker.min.js');
+copyFileSync('node_modules/pdfjs-dist/build/pdf.mjs', 'dist/pdf.mjs');
 
 if (watch) {
   const ctx = await esbuild.context(buildOptions);

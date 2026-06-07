@@ -1,24 +1,9 @@
-// pdf.js is loaded via the extension's manifest as a web-accessible resource.
-// It runs in the popup context (not service worker) because it needs DOM APIs.
-
-declare const pdfjsLib: {
-  getDocument: (src: { data: ArrayBuffer }) => { promise: Promise<PDFDocumentProxy> };
-  GlobalWorkerOptions: { workerSrc: string };
-};
-
-interface PDFDocumentProxy {
-  numPages: number;
-  getPage: (n: number) => Promise<PDFPageProxy>;
-}
-
-interface PDFPageProxy {
-  getTextContent: () => Promise<{ items: Array<{ str: string }> }>;
-}
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
 export async function parsePDF(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
-  pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.js');
-  const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+  GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.js');
+  const doc = await getDocument({ data: buffer }).promise;
   const pages: string[] = [];
 
   for (let i = 1; i <= doc.numPages; i++) {

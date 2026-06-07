@@ -5,7 +5,8 @@ import { runCrossCheck } from '../analyzer/cross-checker.js';
 import { generateReport } from '../report/report-generator.js';
 import { getStoredToken, setToken, removeToken } from '../auth/token-storage.js';
 import { getHistory, saveEntry, clearHistory } from '../background/history.js';
-import type { HistoryEntry } from '../types/index.js';
+import { scrapePortfolio, portfolioToExtractedCV } from '../analyzer/web-scraper.js';
+import type { HistoryEntry, ScrapedPortfolio, ExperienceDate } from '../types/index.js';
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,18 @@ const tokenClear = document.getElementById('token-clear') as HTMLButtonElement;
 const minimizeBtn = document.getElementById('minimize-btn') as HTMLButtonElement;
 const historyList = document.getElementById('history-list') as HTMLDivElement;
 const clearHistoryBtn = document.getElementById('clear-history') as HTMLButtonElement;
+
+// ─── Portfolio DOM ──────────────────────────────────────────────────────────
+
+const portfolioInput = document.getElementById('portfolio-url') as HTMLInputElement;
+const btnScrape = document.getElementById('btn-scrape') as HTMLButtonElement;
+const portfolioPill = document.getElementById('portfolio-pill') as HTMLDivElement;
+const pillName = document.getElementById('pill-name') as HTMLSpanElement;
+const pillSeniority = document.getElementById('pill-seniority') as HTMLSpanElement;
+const pillSkills = document.getElementById('pill-skills') as HTMLSpanElement;
+const pillClear = document.getElementById('pill-clear') as HTMLButtonElement;
+
+let scrapedPortfolio: ScrapedPortfolio | null = null;
 
 let selectedFile: File | null = null;
 let tokenOpen = false;
@@ -117,7 +130,8 @@ dropZone.addEventListener('drop', e => {
 // ─── Button state ─────────────────────────────────────────────────────────────
 
 function updateButton(): void {
-  analyzeBtn.disabled = !selectedFile || !usernameInput.value.trim();
+  const hasInput = !!(selectedFile || scrapedPortfolio);
+  analyzeBtn.disabled = !hasInput || !usernameInput.value.trim();
 }
 usernameInput.addEventListener('input', updateButton);
 
@@ -187,21 +201,37 @@ clearHistoryBtn.addEventListener('click', async () => {
 // ─── Analysis ─────────────────────────────────────────────────────────────────
 
 analyzeBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
+  if (!selectedFile && !scrapedPortfolio) return;
 
   const username = usernameInput.value.trim().replace(/^@/, '');
   const token = await getStoredToken();
   setLoading(true);
-  setStatus('Parsing PDF…');
   resultsEl.innerHTML = '';
 
   try {
-    const rawText = await parsePDF(selectedFile);
-    setStatus('Extracting skills…');
-    const cv = extractCV(rawText);
+    let cv: { skills: string[]; dates: ExperienceDate[]; githubLink: string | null; rawText: string };
+
+    if (selectedFile) {
+      setStatus('Parsing PDF…');
+      cv = extractCV(await parsePDF(selectedFile));
+    } else {
+      setStatus('Using portfolio data…');
+      cv = { skills: [], dates: [], githubLink: null, rawText: '' };
+    }
+
+    if (scrapedPortfolio) {
+      setStatus('Merging portfolio data…');
+      const portfolioCV = portfolioToExtractedCV(scrapedPortfolio);
+      cv = {
+        ...cv,
+        skills: [...new Set([...cv.skills, ...portfolioCV.skills])],
+        dates: [...cv.dates, ...portfolioCV.dates],
+        githubLink: cv.githubLink ?? portfolioCV.githubLink,
+      };
+    }
 
     if (cv.skills.length === 0) {
-      setStatus('No recognizable skills found in the PDF. Check the file.', true);
+      setStatus('No recognizable skills found. Check the file or URL.', true);
       return;
     }
 
@@ -252,4 +282,70 @@ analyzeBtn.addEventListener('click', async () => {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 initToken();
+
+// ─── Portfolio Scraper ──────────────────────────────────────────────────────
+
+portfolioInput.addEventListener('input', () => {
+  btnScrape.disabled = !portfolioInput.value.trim().startsWith('http');
+});
+
+btnScrape.addEventListener('click', async () => {
+  const url = portfolioInput.value.trim();
+  if (!url) return;
+
+  btnScrape.disabled = true;
+  btnScrape.textContent = 'Loading…';
+  portfolioPill.hidden = true;
+  scrapedPortfolio = null;
+
+  try {
+    const portfolio = await scrapePortfolio(url);
+    scrapedPortfolio = portfolio;
+
+    pillName.textContent = portfolio.name ?? new URL(url).hostname;
+
+    const level = portfolio.seniority.level;
+    pillSeniority.textContent = level === 'junior' ? 'Junior'
+      : level === 'mid' ? 'Mid-level'
+      : level === 'senior' ? 'Senior' : '—';
+    pillSeniority.className = `badge level-${level}`;
+
+    pillSkills.textContent = `${portfolio.skills.length} skills`;
+    portfolioPill.hidden = false;
+
+    if (portfolio.links.github) {
+      const gh = portfolio.links.github.split('github.com/')[1]?.split('/')[0];
+      if (gh && !usernameInput.value) usernameInput.value = gh;
+    }
+
+    updateButton();
+  } catch (err) {
+    setStatus(`Portfolio scrape failed: ${err instanceof Error ? err.message : String(err)}`, true);
+  } finally {
+    btnScrape.disabled = false;
+    btnScrape.textContent = 'Scrape';
+  }
+});
+
+pillClear.addEventListener('click', () => {
+  scrapedPortfolio = null;
+  portfolioInput.value = '';
+  portfolioPill.hidden = true;
+  btnScrape.disabled = true;
+  updateButton();
+});
+
+// ─── Auto-detect portfolio from current tab ─────────────────────────────────
+
+async function detectPortfolioFromTab(): Promise<void> {
+  try {
+    const { detectedPortfolio } = await chrome.storage.session.get('detectedPortfolio');
+    if (detectedPortfolio && Date.now() - detectedPortfolio.detectedAt < 60000) {
+      portfolioInput.value = detectedPortfolio.url;
+      btnScrape.disabled = false;
+    }
+  } catch {}
+}
+
+detectPortfolioFromTab();
 loadHistory();

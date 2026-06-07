@@ -8,6 +8,34 @@ export interface ExperienceDate {
   yearsOfExperience: number;
 }
 
+// ─── Web Scraper (portfolio) ───────────────────────────────────────────────────
+
+export interface SeniorityResult {
+  level: 'junior' | 'mid' | 'senior' | 'unknown';
+  confidence: 'high' | 'medium' | 'low';
+  signals: string[];
+}
+
+export interface ScrapedPortfolio {
+  name: string | null;
+  title: string | null;
+  bio: string | null;
+  skills: string[];
+  experience: {
+    company: string;
+    role: string;
+    dates: string;
+  }[];
+  education: string[];
+  links: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
+  seniority: SeniorityResult;
+  rawText: string;
+}
+
 export interface ExtractedCV {
   skills: string[];
   dates: ExperienceDate[];
