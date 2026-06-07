@@ -81,6 +81,48 @@ async function extractGitHubFromScripts(): Promise<string | null> {
 
 let scriptsFetched = false;
 
+// ─── Live DOM query (popup requests this on user click) ──────────────────────
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.action === 'getGithubFromDOM') {
+    const urls = new Set<string>();
+
+    // 1. <a href> elements
+    const anchors = document.querySelectorAll<HTMLAnchorElement>('a[href*="github.com"]');
+    for (const a of anchors) urls.add(a.href);
+
+    // 2. Any attribute containing "github.com" (onclick, data-href, etc.)
+    const all = document.querySelectorAll<HTMLElement>('*');
+    for (const el of all) {
+      for (const attr of el.attributes) {
+        if ((attr.value ?? '').toLowerCase().includes('github.com') && attr.name !== 'href') {
+          const m = attr.value.match(/https?:\/\/(?:www\.)?github\.com\/[^\s"'`]+/i);
+          if (m) urls.add(m[0].replace(/\/+$/, ''));
+        }
+      }
+    }
+
+    // 3. innerText (the URL might appear as plain text)
+    const bodyText = document.body?.innerText ?? '';
+    const textMatches = bodyText.matchAll(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38})/gi);
+    for (const m of textMatches) {
+      urls.add(`https://github.com/${m[1]}`);
+    }
+
+    // Prefer profile URLs (no path segment after the username) over repo URLs
+    const sorted = [...urls].sort((a, b) => {
+      const aIsProfile = !a.replace(/^https?:\/\/github\.com\//i, '').includes('/');
+      const bIsProfile = !b.replace(/^https?:\/\/github\.com\//i, '').includes('/');
+      if (aIsProfile && !bIsProfile) return -1;
+      if (!aIsProfile && bIsProfile) return 1;
+      return 0;
+    });
+
+    sendResponse({ url: sorted[0] ?? null, allUrls: sorted });
+    return;
+  }
+});
+
 async function detectAndStore(): Promise<void> {
   try {
     const { isPortfolio, confidence } = hasPortfolioSignals();

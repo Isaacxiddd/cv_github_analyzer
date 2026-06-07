@@ -292,6 +292,17 @@ portfolioInput.addEventListener('input', () => {
   btnScrape.disabled = !portfolioInput.value.trim().startsWith('http');
 });
 
+async function queryLiveDOMforGitHub(url: string): Promise<string | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || tab.url !== url) return null;
+  try {
+    const resp = await chrome.tabs.sendMessage(tab.id, { action: 'getGithubFromDOM' });
+    return (resp as { url?: string })?.url ?? null;
+  } catch {
+    return null; // content script not available or not responding
+  }
+}
+
 btnScrape.addEventListener('click', async () => {
   const url = portfolioInput.value.trim();
   if (!url) return;
@@ -304,6 +315,14 @@ btnScrape.addEventListener('click', async () => {
   try {
     const portfolio = await scrapePortfolio(url);
     scrapedPortfolio = portfolio;
+
+    // Also ask the content script for live-DOM GitHub URLs.
+    // This catches cases where the cache doesn't yet have a scriptsGithubUrl
+    // (async bundle fetch still in-flight) or the URL is in a React rendered element.
+    const liveUrl = await queryLiveDOMforGitHub(url);
+    if (liveUrl) {
+      portfolio.links.github = liveUrl;
+    }
 
     pillName.textContent = portfolio.name ?? new URL(url).hostname;
 
