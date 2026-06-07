@@ -46,23 +46,23 @@ function hasPortfolioSignals(): { isPortfolio: boolean; confidence: number } {
 }
 
 async function detectAndStore(): Promise<void> {
-  const { isPortfolio, confidence } = hasPortfolioSignals();
-  if (isPortfolio) {
-    await chrome.storage.session.set({
-      detectedPortfolio: {
-        url: window.location.href,
-        title: document.title,
-        confidence,
-        detectedAt: Date.now(),
-      },
-    });
+  try {
+    const { isPortfolio, confidence } = hasPortfolioSignals();
+    if (isPortfolio) {
+      await chrome.storage.session.set({
+        detectedPortfolio: {
+          url: window.location.href,
+          title: document.title,
+          confidence,
+          detectedAt: Date.now(),
+        },
+      });
 
-    // Store full rendered DOM content so the popup can extract skills
-    // even from SPAs where fetch() only gets an HTML shell.
-    // Limit to 250KB to avoid chrome.storage.session quota (~1MB).
-    const renderedText = (document.body?.innerText ?? '').slice(0, 50_000);
-    const renderedHTML = (document.body?.innerHTML ?? '').slice(0, 200_000);
-    try {
+      // Store full rendered DOM content so the popup can extract skills
+      // even from SPAs where fetch() only gets an HTML shell.
+      // Limit to 250KB to avoid chrome.storage.session quota (~1MB).
+      const renderedText = (document.body?.innerText ?? '').slice(0, 50_000);
+      const renderedHTML = (document.body?.innerHTML ?? '').slice(0, 200_000);
       await chrome.storage.session.set({
         cachedScrape: {
           url: window.location.href,
@@ -71,15 +71,15 @@ async function detectAndStore(): Promise<void> {
           detectedAt: Date.now(),
         },
       });
-    } catch {
-      // silently ignore storage quota errors
+    } else {
+      const { detectedPortfolio } = await chrome.storage.session.get('detectedPortfolio');
+      if (detectedPortfolio?.url === window.location.href) {
+        await chrome.storage.session.remove('detectedPortfolio');
+        await chrome.storage.session.remove('cachedScrape');
+      }
     }
-  } else {
-    const existing = await chrome.storage.session.get('detectedPortfolio');
-    if (existing.detectedPortfolio?.url === window.location.href) {
-      await chrome.storage.session.remove('detectedPortfolio');
-      await chrome.storage.session.remove('cachedScrape');
-    }
+  } catch {
+    // storage not available in this context (e.g. about:blank, data:, iframe)
   }
 }
 
