@@ -1,7 +1,7 @@
 # CV ↔ GitHub Analyzer
 
 [![Tests](https://github.com/Isaacxiddd/cv_github_analyzer/actions/workflows/test.yml/badge.svg)](https://github.com/Isaacxiddd/cv_github_analyzer/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-brightgreen)](https://developer.chrome.com/docs/extensions/)
 
@@ -56,4 +56,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code conventions,
 
 ## License
 
-[MIT](LICENSE) © 2025 Isaac Garcia
+[Apache-2.0](LICENSE) © 2025 Isaac Garcia
