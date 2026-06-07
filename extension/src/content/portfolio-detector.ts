@@ -79,6 +79,8 @@ async function extractGitHubFromScripts(): Promise<string | null> {
   return foundProfile ?? foundAny;
 }
 
+let scriptsFetched = false;
+
 async function detectAndStore(): Promise<void> {
   try {
     const { isPortfolio, confidence } = hasPortfolioSignals();
@@ -92,24 +94,34 @@ async function detectAndStore(): Promise<void> {
         },
       });
 
-      // Store full rendered DOM content so the popup can extract skills
-      // even from SPAs where fetch() only gets an HTML shell.
+      // Store full rendered DOM content immediately (so the popup can
+      // access it right away), then update with JS bundle URLs later.
       const renderedText = (document.body?.innerText ?? '').slice(0, 150_000);
       const renderedHTML = (document.body?.innerHTML ?? '').slice(0, 480_000);
 
-      // Also try to extract GitHub URL from JS bundles (catches cases
-      // where the URL is in a <button onClick> closure, not in the DOM).
-      const scriptsUrl = await extractGitHubFromScripts();
+      const baseEntry = {
+        url: window.location.href,
+        renderedText,
+        renderedHTML,
+        scriptsGithubUrl: null as string | null,
+        detectedAt: Date.now(),
+      };
+      await chrome.storage.session.set({ cachedScrape: baseEntry });
 
-      await chrome.storage.session.set({
-        cachedScrape: {
-          url: window.location.href,
-          renderedText,
-          renderedHTML,
-          scriptsGithubUrl: scriptsUrl,
-          detectedAt: Date.now(),
-        },
-      });
+      // Extract GitHub URL from JS bundles asynchronously (first call only).
+      // Catches URLs in <button onClick> closures, not visible in the DOM.
+      if (!scriptsFetched) {
+        scriptsFetched = true;
+        extractGitHubFromScripts().then(scriptsUrl => {
+          if (!scriptsUrl) return;
+          chrome.storage.session.get('cachedScrape').then(({ cachedScrape }) => {
+            if (cachedScrape?.url === window.location.href) {
+              cachedScrape.scriptsGithubUrl = scriptsUrl;
+              chrome.storage.session.set({ cachedScrape });
+            }
+          });
+        });
+      }
     } else {
       const { detectedPortfolio } = await chrome.storage.session.get('detectedPortfolio');
       if (detectedPortfolio?.url === window.location.href) {
