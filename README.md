@@ -252,8 +252,8 @@ See:
 
 ```bash
 cd extension
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 ### Load Extension
@@ -278,14 +278,14 @@ npm run build
 ## Development
 
 ```bash
-npm install
+pnpm install
 
-npm run build
-npm run dev
+pnpm build
+npm dev
 
-npm run test
-npm run typecheck
-npm run lint
+pnpm test
+pnpm typecheck
+pnpm lint
 ```
 
 ---
